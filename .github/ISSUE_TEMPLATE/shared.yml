@@ -1,0 +1,26 @@
+name: The picture showed in a screen share
+description: People watching your screen share could see FloatPiP's floating picture.
+title: "Seen in a share: "
+labels: [sharing]
+body:
+  - type: input
+    id: versions
+    attributes:
+      label: FloatPiP and macOS versions
+      placeholder: FloatPiP v0.1.0, macOS 26.6.2
+    validations: { required: true }
+  - type: input
+    id: app
+    attributes:
+      label: The app you shared with
+      placeholder: the app's name and version
+    validations: { required: true }
+  - type: dropdown
+    id: how
+    attributes:
+      label: What you shared
+      options: [The whole screen, One window, Something else (say below)]
+    validations: { required: true }
+  - type: textarea
+    id: more
+    attributes: { label: "Anything else that might help" }

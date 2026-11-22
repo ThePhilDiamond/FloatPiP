@@ -1,0 +1,6 @@
+.build/
+build/
+.DS_Store
+# Working notes kept on this Mac only: they describe the owner's own use and other projects
+STAGE-MAP.md
+notes/

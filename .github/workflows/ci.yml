@@ -1,0 +1,30 @@
+# Checks the version, builds the app, and runs the selftest, on each push and pull request.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    # macOS 26: FloatPiP needs its SDK (it runs on macOS 26 and later)
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check VERSION, Info.plist and CHANGELOG.md agree
+        run: scripts/check-version.sh
+      - name: Build
+        run: swift build -c release
+      - name: Check the layout and the remembered options
+        run: .build/release/FloatPiP --selftest
+      - name: Package the app
+        run: scripts/build-app.sh
+      - uses: actions/upload-artifact@v7
+        with:
+          name: FloatPiP-app
+          path: build/FloatPiP.app
+          retention-days: 14

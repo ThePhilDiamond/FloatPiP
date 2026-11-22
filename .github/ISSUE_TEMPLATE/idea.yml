@@ -1,0 +1,8 @@
+name: Idea
+description: Something FloatPiP should do.
+labels: [idea]
+body:
+  - type: textarea
+    id: idea
+    attributes: { label: "What should it do, and what problem does that solve?" }
+    validations: { required: true }

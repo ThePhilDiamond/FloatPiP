@@ -1,0 +1,21 @@
+name: Report a problem
+description: FloatPiP isn't working right.
+title: "Problem: "
+labels: [problem]
+body:
+  - type: markdown
+    attributes:
+      value: "Thanks for reporting. Leave out anything private, such as what was in the window: this is public."
+  - type: input
+    id: versions
+    attributes:
+      label: FloatPiP and macOS versions
+      description: FloatPiP's version is in its menu, above Quit. macOS's is in the Apple menu ▸ About This Mac.
+      placeholder: FloatPiP v0.1.0, macOS 26.6.2
+    validations: { required: true }
+  - type: textarea
+    id: what
+    attributes:
+      label: What you did, and what happened
+      description: If the picture closed by itself, its menu shows the reason in gray under Stop.
+    validations: { required: true }

@@ -1,0 +1,41 @@
+# Asks each new contributor to sign CLA.md once per version, on their first pull request, and records the signature
+# in signatures/cla-<version>.json on the cla-signatures branch (main only takes changes through pull requests, so the
+# action can't write there). The signing sentence names the version, because the action records the comment, not the
+# document's revision. A new version of CLA.md gets a new sentence and a new signatures file: see docs/CLA-ADMIN.md.
+# Named bots such as Dependabot don't sign.
+name: CLA
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_target:
+    types: [opened, closed, synchronize]
+
+permissions:
+  actions: write
+  contents: write
+  pull-requests: write
+  statuses: write
+
+jobs:
+  cla:
+    runs-on: ubuntu-latest
+    steps:
+      - name: CLA Assistant
+        if: (github.event.comment.body == 'recheck' || github.event.comment.body == 'I have read FloatPiP CLA version 1.0 and I hereby sign it') || github.event_name == 'pull_request_target'
+        uses: contributor-assistant/github-action@v2.6.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          path-to-signatures: 'signatures/cla-1.0.json'
+          path-to-document: 'https://github.com/ThePhilDiamond/FloatPiP/blob/main/CLA.md'
+          branch: 'cla-signatures'
+          custom-pr-sign-comment: 'I have read FloatPiP CLA version 1.0 and I hereby sign it'
+          custom-notsigned-prcomment: 'Thank you for your pull request. Before it can be merged, $you need to sign the [FloatPiP Contributor License Agreement](https://github.com/ThePhilDiamond/FloatPiP/blob/main/CLA.md), version 1.0, once: everyone whose work is in it signs for themselves. You keep your copyright. To sign, post a comment with exactly this sentence:'
+          # The action names a commit's author by their account, or, when the author has none (a bot such as
+          # Dependabot isn't a user account), by the account that committed it: web-flow, GitHub's own committer for
+          # commits made on its website and API. People with an account are always named by their own. Bots are named
+          # one by one, never with a wildcard: a GitHub App can open a pull request for a person who hasn't signed.
+          # web-flow also passes a commit made through GitHub's API by an author with no account, so the maintainer
+          # checks the authors of any outside pull request that passes without a signature (docs/CLA-ADMIN.md).
+          allowlist: ThePhilDiamond,dependabot[bot],github-actions[bot],web-flow
