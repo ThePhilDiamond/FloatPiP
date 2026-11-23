@@ -22,7 +22,7 @@ macOS 26 or later, on a Mac with Apple silicon.
 
 1. Download `FloatPiP-vX.Y.Z.zip` from the [Releases page](../../releases), open it, and drag FloatPiP to your Applications folder. (To build it yourself instead, see [BUILDING.md](BUILDING.md).)
 2. Open FloatPiP. Because it isn't notarized by Apple yet, macOS may ask you to confirm the first time: choose **Open**, or go to System Settings ▸ Privacy & Security and choose **Open Anyway**.
-3. macOS's window picker appears: click the window you want to float.
+3. macOS's window picker appears: click the window you want to float, then click **Share Window**. That is macOS's own wording, which FloatPiP can't change; a note at the top of the screen says so. Nothing is shared: the window only floats on your screen.
 
 FloatPiP's icon, a small picture afloat on rippling water, appears in the menu bar, not the Dock.
 
@@ -37,6 +37,7 @@ Click the menu bar icon, or right-click the floating picture:
 - **Shape**: Rounded (the default) and Rectangle (sharp corners) show the whole window, never stretched; Circle shows the middle of it.
 - **Zoom (Center of Window)**: 100% shows the whole window; 125% to 400% show its center larger, cutting away the edges, such as a call app's buttons. Scroll or pinch on the picture to zoom in 10% steps or smoothly.
 - **Hide from Screen Sharing** (on by default): keeps the picture out of screen sharing. A small note on the picture says whether people watching your share can see it; it shows for a few seconds when the picture appears, and whenever the pointer is over it.
+- **Show Sharing Note on Picture** (on by default): turn the note off if you find it distracting.
 
 FloatPiP remembers your choices. It stops by itself when the window closes, or when you stop it from macOS's screen-sharing icon in the menu bar.
 

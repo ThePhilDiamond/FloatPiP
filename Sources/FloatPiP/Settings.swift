@@ -92,6 +92,12 @@ final class Settings {
         set { defaults.set(newValue, forKey: "hideFromSharing") }
     }
 
+    /// Whether the picture's note about screen sharing appears at all (it can be turned off in the menu).
+    var showShareNote: Bool {
+        get { defaults.object(forKey: "showShareNote") as? Bool ?? true }
+        set { defaults.set(newValue, forKey: "showShareNote") }
+    }
+
     var shape: Shape {
         get { Shape(rawValue: defaults.string(forKey: "shape") ?? "") ?? .rounded }
         set { defaults.set(newValue.rawValue, forKey: "shape") }
