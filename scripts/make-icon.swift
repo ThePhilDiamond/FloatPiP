@@ -495,6 +495,7 @@ struct CornerStyle {
     var knockMargin: CGFloat = 0.6                          // with submerge: how far past the outer ring the frame is hidden, in frame lines
     var haloFollowsBreaks = true                            // the water gap traces the broken pieces (false: the whole ripples, smooth)
     var noFrame = false                                     // leave out the outer window: the small picture and its ripples alone
+    var gripMix: CGFloat = 0                                // with a paddle: 0.5 puts the grip halfway between raised and low
     var lowGrip = false                                     // with a paddle: its grip no higher than the picture's top
     var raft = ""                                           // round 16: "logs", "lashed", "logends", "paddle" (empty: the plain picture)
 }
@@ -719,9 +720,12 @@ func levelCornerStyled(_ s: CGFloat, _ st: CornerStyle) {
         if st.raft.hasSuffix("paddle") || st.raft.hasSuffix("paddle2") {
             // a paddle across the picture's left side, its blade dipping into the water
             let bold = st.raft.hasSuffix("paddle2") || st.lowGrip
-            // lowGrip (menu bar): the grip no higher than the picture, so the icon keeps its size at 18 points
-            let grip = st.lowGrip ? NSPoint(x: pc.x - w * 0.02, y: pc.y + h * 0.50)
-                : NSPoint(x: pc.x - w * (bold ? 0.10 : 0.18), y: pc.y + h * (bold ? 0.92 : 0.78))
+            // lowGrip (menu bar): the grip no higher than the picture, so the icon keeps its size at 18 points;
+            // gripMix: part way from the raised grip (0) to the low one (1)
+            let mix: CGFloat = st.lowGrip ? 1 : st.gripMix
+            let high = NSPoint(x: pc.x - w * (bold ? 0.10 : 0.18), y: pc.y + h * (bold ? 0.92 : 0.78))
+            let low = NSPoint(x: pc.x - w * 0.02, y: pc.y + h * 0.50)
+            let grip = NSPoint(x: high.x + (low.x - high.x) * mix, y: high.y + (low.y - high.y) * mix)
             let tip = NSPoint(x: pc.x - w * (bold ? 0.86 : 0.80), y: waterline - s * 0.012)
             let dx = tip.x - grip.x, dy = tip.y - grip.y, len = sqrt(dx * dx + dy * dy)
             let shaft = NSBezierPath(); shaft.move(to: grip); shaft.line(to: NSPoint(x: grip.x + dx * 0.72, y: grip.y + dy * 0.72))
@@ -990,6 +994,8 @@ var menuBobPaddle = menuBob; menuBobPaddle.raft = "paddle2"
 var menuBobLogsPaddle = menuBob; menuBobLogsPaddle.raft = "logspaddle2"
 var menuBobPaddleLow = menuBobPaddle; menuBobPaddleLow.lowGrip = true
 var menuBobAcross = menuBob; menuBobAcross.raft = "deckacross"
+var menuBobPaddleMid = menuBobPaddle; menuBobPaddleMid.gripMix = 0.5
+var raftPaddleMid = outerBoth; raftPaddleMid.raft = "paddle2"; raftPaddleMid.gripMix = 0.5
 var menuBobLogsPaddleLow = menuBobLogsPaddle; menuBobLogsPaddleLow.lowGrip = true
 var curveCut = curveDeep
 curveCut.knockRing = 0
@@ -1192,6 +1198,94 @@ final8.rings[0].t = 0.034; final8.rings[1].t = 0.027
 var final9 = final8
 final9.angle = -12; final9.waterline = -0.215
 
+
+// MARK: Round 17 (Phil: the outer window made of ripples, spreading from the picture-in-picture
+// window, which is a raft in the bottom-right corner with a paddle across it), seen from above
+
+/// A rounded rectangle part way from `a` (t = 0) to `b` (t = 1).
+func lerpRect(_ a: NSRect, _ b: NSRect, _ t: CGFloat) -> NSRect {
+    NSRect(x: a.minX + (b.minX - a.minX) * t, y: a.minY + (b.minY - a.minY) * t,
+           width: a.width + (b.width - a.width) * t, height: a.height + (b.height - a.height) * t)
+}
+
+/// Variants: "ripplewin" (two ripples inside the window), "ripplewin3" (three), "ripplewintilt" (the raft
+/// turned a little, as if rocking), "ripplewinsolid" (the ripples unbroken).
+func drawRippleWindow(_ s: CGFloat, _ v: String) {
+    drawTile(s)
+    let window = NSRect(x: s * 0.19, y: s * 0.26, width: s * 0.62, height: s * 0.48)
+    let line = s * 0.035
+    // the raft: the picture-in-picture window, in the window's bottom-right corner
+    // set in from the corner far enough that the ripples have room on the near side too
+    let raft = NSRect(x: window.maxX - s * 0.125 - s * 0.20, y: window.minY + s * 0.110, width: s * 0.20, height: s * 0.135)
+    let c = NSPoint(x: raft.midX, y: raft.midY)
+    // rings from just around the raft out to the window; each is thinner on the far side, where it has spread further
+    let n = v == "ripplewin3" ? 3 : 2
+    let start = raft.insetBy(dx: -s * 0.028, dy: -s * 0.028)
+    let rings = NSBezierPath(); rings.windingRule = .evenOdd
+    for k in 1...(n + 1) {
+        let t = CGFloat(k) / CGFloat(n + 1)
+        let r = lerpRect(start, window, t)
+        // round near the raft, as a ripple is, squaring off to the window's corners as it spreads
+        let rad = min(r.height / 2, s * 0.07 + (r.height / 2 - s * 0.07) * pow(1 - t, 1.2) * (k == n + 1 ? 0 : 1))
+        let near = line * (k == n + 1 ? 1 : 0.55), far = line * (k == n + 1 ? 1 : 0.28)
+        let outer = NSBezierPath(roundedRect: r, xRadius: rad, yRadius: rad)
+        let inner = NSRect(x: r.minX + far, y: r.minY + near, width: r.width - far - near, height: r.height - near - far)
+        let ring = NSBezierPath(); ring.windingRule = .evenOdd
+        ring.append(outer); ring.append(NSBezierPath(roundedRect: inner, xRadius: max(0, rad - line), yRadius: max(0, rad - line)))
+        if k == n + 1 || v == "ripplewinsolid" { rings.append(ring); continue }
+        // the inner ripples break, as water rings do: gaps along rays from the raft
+        NSGraphicsContext.saveGraphicsState()
+        let keep = NSBezierPath(rect: NSRect(x: 0, y: 0, width: s, height: s)); keep.windingRule = .evenOdd
+        let gaps: [CGFloat] = k == 1 ? [128, 200] : (k == 2 ? [100, 160, 232] : [140, 190])
+        for g in gaps {
+            let a0 = (g - 6) * .pi / 180, a1 = (g + 6) * .pi / 180, R = s * 2
+            let wedge = NSBezierPath(); wedge.move(to: c)
+            wedge.line(to: NSPoint(x: c.x + R * cos(a0), y: c.y + R * sin(a0)))
+            wedge.line(to: NSPoint(x: c.x + R * cos(a1), y: c.y + R * sin(a1))); wedge.close()
+            keep.append(wedge)
+        }
+        keep.addClip()
+        white.setFill(); ring.fill()
+        NSGraphicsContext.restoreGraphicsState()
+    }
+    white.setFill(); rings.fill()
+    // the raft, seen from above: logs along its length, lashed, with a paddle across it
+    let tilt: CGFloat = v == "ripplewintilt" ? -8 : 0
+    let tr = NSAffineTransform(); tr.translateX(by: c.x, yBy: c.y); tr.rotate(byDegrees: tilt); tr.translateX(by: -c.x, yBy: -c.y)
+    // logs lying along the raft, side by side, their ends rounded
+    let logs = NSBezierPath()
+    let nl = 3, lg = s * 0.008, lh = (raft.height - lg * CGFloat(nl - 1)) / CGFloat(nl)
+    for k in 0..<nl {
+        logs.append(NSBezierPath(roundedRect: NSRect(x: raft.minX, y: raft.minY + (lh + lg) * CGFloat(k), width: raft.width, height: lh), xRadius: lh / 2, yRadius: lh / 2))
+    }
+    // two ropes lashing the logs together, near each end
+    for fx in [CGFloat(0.20), 0.80] {
+        let rw = s * 0.026
+        logs.append(NSBezierPath(rect: NSRect(x: raft.minX + raft.width * fx - rw / 2, y: raft.minY + lh * 0.25, width: rw, height: raft.height - lh * 0.5)))
+    }
+    let body = tr.transform(logs)
+    let hull = tr.transform(NSBezierPath(roundedRect: raft, xRadius: lh / 2, yRadius: lh / 2))
+    // the paddle: across the logs, out past the raft's left end, its blade in the water on the far side
+    let grip = NSPoint(x: raft.maxX - raft.width * 0.12, y: raft.midY + raft.height * 0.30)
+    let tip = NSPoint(x: raft.minX - raft.width * 0.62, y: raft.midY - raft.height * 0.30)
+    let dx = tip.x - grip.x, dy = tip.y - grip.y, len = sqrt(dx * dx + dy * dy)
+    let shaft = NSBezierPath(); shaft.move(to: grip); shaft.line(to: NSPoint(x: grip.x + dx * 0.76, y: grip.y + dy * 0.76))
+    shaft.lineCapStyle = .round
+    let bladeC = NSPoint(x: grip.x + dx * 0.88, y: grip.y + dy * 0.88)
+    let bt = NSAffineTransform(); bt.translateX(by: bladeC.x, yBy: bladeC.y); bt.rotate(byRadians: atan2(dy, dx))
+    // an oar's blade: long and flat, rounded at the tip
+    let blade = bt.transform(NSBezierPath(roundedRect: NSRect(x: -len * 0.17, y: -s * 0.032, width: len * 0.34, height: s * 0.064), xRadius: s * 0.030, yRadius: s * 0.030))
+    let paddle = NSBezierPath(cgPath: shaft.cgPath.copy(strokingWithWidth: s * 0.019, lineCap: .round, lineJoin: .round, miterLimit: 4))
+    paddle.append(blade)
+    let paddleT = tr.transform(paddle)
+    // gaps of water around the raft and around the paddle, so each reads on its own
+    waterFill(s, NSBezierPath(cgPath: hull.cgPath.copy(strokingWithWidth: line * 1.3, lineCap: .round, lineJoin: .round, miterLimit: 4)))
+    waterFill(s, hull)
+    white.setFill(); body.fill()
+    waterFill(s, NSBezierPath(cgPath: paddleT.cgPath.copy(strokingWithWidth: s * 0.026, lineCap: .round, lineJoin: .round, miterLimit: 4)))
+    white.setFill(); paddleT.fill()
+}
+
 let options: [(String, (CGFloat) -> Void)] = [
     ("ripples", drawRipplesLogo), ("tube", drawTubeLogo), ("corner", drawCornerLogo), ("afloat", drawAfloatLogo), ("lounger", drawLoungerLogo),
     ("bobber", drawBobberLogo), ("pipbuoy", drawPipBuoyLogo), ("squarering", drawSquareRingLogo),
@@ -1234,7 +1328,10 @@ let options: [(String, (CGFloat) -> Void)] = [
     ("raftacross", { levelCornerStyled($0, raftAcross) }), ("raftacross4", { levelCornerStyled($0, raftAcross4) }),
     ("raftacrossshort", { levelCornerStyled($0, raftAcrossShort) }), ("raftacrossrings", { levelCornerStyled($0, raftAcrossRings) }), ("raftdeckplain", { levelCornerStyled($0, raftDeckPlain) }),
     ("menubobpaddle", { levelCornerStyled($0, menuBobPaddle) }), ("menuboblogspaddle", { levelCornerStyled($0, menuBobLogsPaddle) }),
-    ("menubobpaddlelow", { levelCornerStyled($0, menuBobPaddleLow) }), ("menubobacross", { levelCornerStyled($0, menuBobAcross) }), ("menuboblogspaddlelow", { levelCornerStyled($0, menuBobLogsPaddleLow) }), ("menubold", { levelCornerStyled($0, menuBold) }),
+    ("menubobpaddlelow", { levelCornerStyled($0, menuBobPaddleLow) }), ("menubobacross", { levelCornerStyled($0, menuBobAcross) }),
+    ("ripplewin", { drawRippleWindow($0, "ripplewin") }), ("ripplewin3", { drawRippleWindow($0, "ripplewin3") }),
+    ("ripplewintilt", { drawRippleWindow($0, "ripplewintilt") }), ("ripplewinsolid", { drawRippleWindow($0, "ripplewinsolid") }),
+    ("menubobpaddlemid", { levelCornerStyled($0, menuBobPaddleMid) }), ("raftpaddlemid", { levelCornerStyled($0, raftPaddleMid) }), ("menuboblogspaddlelow", { levelCornerStyled($0, menuBobLogsPaddleLow) }), ("menubold", { levelCornerStyled($0, menuBold) }),
     ("menumid", { levelCornerStyled($0, menuMid) }),
     ("menubob", { levelCornerStyled($0, menuBob) }), ("menubobmid", { levelCornerStyled($0, menuBobMid) }),
     ("menuglyph", { levelCornerStyled($0, menuGlyph) }), ("menuglyph2", { levelCornerStyled($0, menuGlyph2) }),
@@ -1304,6 +1401,11 @@ func menuTemplate(_ draw: (CGFloat) -> Void, height: Int, maxWidth: Int = Int.ma
 }
 
 switch which {
+case "big":
+    // `big <name>`: one option at 1024 pixels (big.png), to look at closely
+    let name = args.count > 3 ? args[3] : chosen
+    save(render(1024, options.first { $0.0 == name }!.1), "big.png")
+    print("Wrote big.png for \(name) in \(out.path)")
 case "menu":
     // menu bar template images: `menu <name>` writes MenuIcon.png (18 px) and MenuIcon@2x.png (36 px),
     // and menu-preview.png showing them at actual size on light and dark menu bars, and enlarged
