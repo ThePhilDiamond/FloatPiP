@@ -53,10 +53,10 @@ sips -z 512 512 build/icon/logo.png --out docs/images/logo.png
 The menu bar icon is the small picture and its ripples from the same drawing, without the window (`menubob`), as a template image that macOS colors for light and dark menu bars:
 
 ```bash
-swift scripts/make-icon.swift build/icon menu menubob 28
+swift scripts/make-icon.swift build/icon menu menubob
 ```
 
-The `28` caps its width at 28 points, so it takes little room beside the notch on Macs that have one.
+A number after `menubob` caps its width in points (for example `menu menubob 28`), for a narrower icon.
 
 ```bash
 cp build/icon/MenuIcon.png build/icon/MenuIcon@2x.png Resources/
