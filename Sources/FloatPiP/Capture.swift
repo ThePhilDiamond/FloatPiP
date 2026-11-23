@@ -26,6 +26,9 @@ final class Capture: NSObject, SCContentSharingPickerObserver, SCStreamDelegate,
     private var windowID: CGWindowID?
     private var aspect: CGFloat = 16.0 / 9.0
     private var pixelSize = CGSize(width: 640, height: 360)
+    /// The window's size in points and its points-to-pixels scale, to cap the capture size.
+    private var windowPoints = CGSize.zero
+    private var windowScale: CGFloat = 2
     private let frameQueue = DispatchQueue(label: "FloatPiP.frames", qos: .userInteractive)
     private var watch: Timer?
 
@@ -58,7 +61,8 @@ final class Capture: NSObject, SCContentSharingPickerObserver, SCStreamDelegate,
 
     /// Called whenever the panel's size or shape changes.
     func setPixelSize(_ size: CGSize) {
-        let new = CGSize(width: Self.even(size.width), height: Self.even(size.height))
+        let capped = cap(size)
+        let new = CGSize(width: Self.even(capped.width), height: Self.even(capped.height))
         guard new != pixelSize else { return }
         pixelSize = new
         stream?.updateConfiguration(makeConfiguration()) { error in
@@ -81,8 +85,9 @@ final class Capture: NSObject, SCContentSharingPickerObserver, SCStreamDelegate,
     private func use(_ filter: SCContentFilter) {
         windowID = filter.includedWindows.first?.windowID
         let size = filter.contentRect.size
-        if size.width > 0 && size.height > 0 { aspect = size.width / size.height }
-        pixelSize = Self.evenSize(delegate?.captureLayout(forAspect: aspect) ?? pixelSize)
+        if size.width > 0 && size.height > 0 { aspect = size.width / size.height; windowPoints = size }
+        if filter.pointPixelScale > 0 { windowScale = CGFloat(filter.pointPixelScale) }
+        pixelSize = Self.evenSize(cap(delegate?.captureLayout(forAspect: aspect) ?? pixelSize))
 
         if let stream {
             stream.updateContentFilter(filter) { error in
@@ -173,6 +178,7 @@ final class Capture: NSObject, SCContentSharingPickerObserver, SCStreamDelegate,
         guard let dict = entry[kCGWindowBounds as String] as? NSDictionary,
               let bounds = CGRect(dictionaryRepresentation: dict),
               bounds.width > 0, bounds.height > 0 else { return }
+        windowPoints = bounds.size
         let a = bounds.width / bounds.height
         if abs(a - aspect) / aspect > 0.01 {
             aspect = a
@@ -188,6 +194,13 @@ final class Capture: NSObject, SCContentSharingPickerObserver, SCStreamDelegate,
         stream = nil
         old?.stopCapture { _ in }
         delegate?.captureDidEnd(reason: reason)
+    }
+
+    /// No larger than the window's own pixels: capturing more only adds work, not detail.
+    private func cap(_ size: CGSize) -> CGSize {
+        guard windowPoints.width > 0, windowPoints.height > 0, size.width > 0, size.height > 0 else { return size }
+        let limit = min(windowPoints.width * windowScale / size.width, windowPoints.height * windowScale / size.height, 1)
+        return CGSize(width: size.width * limit, height: size.height * limit)
     }
 
     private static func even(_ x: CGFloat) -> CGFloat { max(2, (x / 2).rounded() * 2) }

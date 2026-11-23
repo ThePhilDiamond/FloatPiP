@@ -15,6 +15,18 @@ enum Corner: String, CaseIterable {
     var isTop: Bool { self == .topLeft || self == .topRight }
 }
 
+/// Where the picture sits: snapped to the nearest corner, or wherever it was dropped.
+enum Placement: String, CaseIterable {
+    case corners, free
+
+    var title: String {
+        switch self {
+        case .corners: return "Snap to Corners"
+        case .free: return "Stay Where Dropped"
+        }
+    }
+}
+
 enum Shape: String, CaseIterable {
     case rounded, circle, rect
 
@@ -30,6 +42,8 @@ enum Shape: String, CaseIterable {
 /// The options, kept in the app's user defaults so they survive a relaunch.
 final class Settings {
     static let sizeChoices = [10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90]
+    static let zoomChoices = [100, 125, 150, 200, 300, 400]
+    static let zoomRange = 100...400
     private let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
@@ -45,6 +59,37 @@ final class Settings {
     var sizePercent: Int {
         get { min(90, max(10, defaults.object(forKey: "sizePercent") as? Int ?? 30)) }
         set { defaults.set(min(90, max(10, newValue)), forKey: "sizePercent") }
+    }
+
+    var placement: Placement {
+        get { Placement(rawValue: defaults.string(forKey: "placement") ?? "") ?? .corners }
+        set { defaults.set(newValue.rawValue, forKey: "placement") }
+    }
+
+    /// With free placement: the picture's center, in screen coordinates, where it was last dropped.
+    var freeCenter: NSPoint? {
+        get {
+            guard let x = defaults.object(forKey: "freeX") as? Double, let y = defaults.object(forKey: "freeY") as? Double else { return nil }
+            return NSPoint(x: x, y: y)
+        }
+        set {
+            if let p = newValue { defaults.set(Double(p.x), forKey: "freeX"); defaults.set(Double(p.y), forKey: "freeY") }
+            else { defaults.removeObject(forKey: "freeX"); defaults.removeObject(forKey: "freeY") }
+        }
+    }
+
+    /// How far the picture is zoomed into the window's center, as a percent, 100 (the whole window) to 400.
+    var zoomPercent: Int {
+        get { Self.clampZoom(defaults.object(forKey: "zoomPercent") as? Int ?? 100) }
+        set { defaults.set(Self.clampZoom(newValue), forKey: "zoomPercent") }
+    }
+
+    static func clampZoom(_ z: Int) -> Int { min(zoomRange.upperBound, max(zoomRange.lowerBound, z)) }
+
+    /// Whether the picture is left out of screen sharing (true unless turned off in the menu).
+    var hideFromSharing: Bool {
+        get { defaults.object(forKey: "hideFromSharing") as? Bool ?? true }
+        set { defaults.set(newValue, forKey: "hideFromSharing") }
     }
 
     var shape: Shape {

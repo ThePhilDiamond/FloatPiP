@@ -8,6 +8,8 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
     private var statusItem: NSStatusItem!
     private var aspect: CGFloat = 16.0 / 9.0
     private var lastStop: String?
+    /// The zoom while pinching, unrounded, so small pinches add up.
+    private var pinchZoom: CGFloat?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -27,6 +29,10 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
         capture.delegate = self
         panel.pipView.onDragEnded = { [weak self] center in self?.dropped(at: center) }
         panel.pipView.menuProvider = { [weak self] in self?.makeMenu() ?? NSMenu() }
+        panel.pipView.onZoomSteps = { [weak self] steps in self?.zoom(by: steps) }
+        panel.pipView.onPinch = { [weak self] m in self?.pinch(m) }
+        panel.pipView.onPinchBegan = { [weak self] in self?.pinchZoom = nil }
+        applySharing()
         NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification,
                                                object: nil, queue: .main) { [weak self] _ in self?.relayout() }
         capture.pick()
@@ -57,14 +63,14 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
         }
         menu.addItem(.separator())
 
-        let corners = NSMenu()
-        for c in Corner.allCases {
-            let i = item(c.title, #selector(setCorner(_:)))
-            i.representedObject = c.rawValue
-            i.state = settings.corner == c ? .on : .off
-            corners.addItem(i)
+        let positions = NSMenu()
+        for p in Placement.allCases {
+            let i = item(p.title, #selector(setPlacement(_:)))
+            i.representedObject = p.rawValue
+            i.state = settings.placement == p ? .on : .off
+            positions.addItem(i)
         }
-        menu.addItem(submenu("Corner", corners))
+        menu.addItem(submenu("Position", positions))
 
         let sizes = NSMenu()
         for p in Settings.sizeChoices {
@@ -75,6 +81,28 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
         }
         menu.addItem(submenu("Size (Height of Screen)", sizes))
 
+        let zooms = NSMenu()
+        let zoom = settings.zoomPercent
+        for z in Settings.zoomChoices {
+            let i = item(z == 100 ? "100% (Whole Window)" : "\(z)%", #selector(setZoom(_:)))
+            i.tag = z
+            i.state = zoom == z ? .on : .off
+            zooms.addItem(i)
+        }
+        if !Settings.zoomChoices.contains(zoom) {
+            // set by scrolling or pinching: shown, ticked, so the menu says where it is
+            let i = item("\(zoom)%", #selector(setZoom(_:)))
+            i.tag = zoom
+            i.state = .on
+            zooms.addItem(.separator())
+            zooms.addItem(i)
+        }
+        let hint = NSMenuItem(title: "Scroll or pinch on the picture to zoom", action: nil, keyEquivalent: "")
+        hint.isEnabled = false
+        zooms.addItem(.separator())
+        zooms.addItem(hint)
+        menu.addItem(submenu("Zoom (Center of Window)", zooms))
+
         let shapes = NSMenu()
         for s in Shape.allCases {
             let i = item(s.title, #selector(setShape(_:)))
@@ -83,6 +111,11 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
             shapes.addItem(i)
         }
         menu.addItem(submenu("Shape", shapes))
+
+        menu.addItem(.separator())
+        let hide = item("Hide from Screen Sharing", #selector(toggleHideFromSharing))
+        hide.state = settings.hideFromSharing ? .on : .off
+        menu.addItem(hide)
 
         menu.addItem(.separator())
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
@@ -107,10 +140,56 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
     @objc private func pickWindow() { capture.pick() }
     @objc private func stopPiP() { capture.stop() }
 
-    @objc private func setCorner(_ sender: NSMenuItem) {
-        guard let raw = sender.representedObject as? String, let c = Corner(rawValue: raw) else { return }
-        settings.corner = c
-        relayout(animated: true)
+    @objc private func toggleHideFromSharing() {
+        settings.hideFromSharing.toggle()
+        applySharing()
+        if panel.isVisible { panel.pipView.flashNote() }
+    }
+
+    /// The picture is left out of screen sharing unless that is turned off; its note says which.
+    private func applySharing() {
+        panel.sharingType = settings.hideFromSharing ? .none : .readOnly
+        panel.pipView.setNote(settings.hideFromSharing
+            ? ["Not visible in screen shares (change in the menu)", "Not visible in screen shares", "Not shared"]
+            : ["Visible in screen shares (change in the menu)", "Visible in screen shares", "Shared"])
+    }
+
+    @objc private func setPlacement(_ sender: NSMenuItem) {
+        guard let raw = sender.representedObject as? String, let p = Placement(rawValue: raw), p != settings.placement else { return }
+        // keep the picture where it is when freeing it; snap it to the nearest corner when anchoring it
+        let center = pictureCenter
+        settings.placement = p
+        if p == .free {
+            settings.freeCenter = center
+            relayout()
+        } else {
+            dropped(at: center)
+        }
+    }
+
+    @objc private func setZoom(_ sender: NSMenuItem) {
+        settings.zoomPercent = sender.tag
+        relayout()
+    }
+
+    /// Scrolling: 10% a step.
+    private func zoom(by steps: Int) {
+        let z = settings.zoomPercent
+        let next = Settings.clampZoom((z / 10 + steps) * 10)   // onto whole tens, then step
+        guard next != z else { return }
+        settings.zoomPercent = next
+        relayout()
+    }
+
+    /// Pinching: in proportion, 1% at a time.
+    private func pinch(_ magnification: CGFloat) {
+        let current = pinchZoom ?? CGFloat(settings.zoomPercent)
+        let next = min(CGFloat(Settings.zoomRange.upperBound), max(CGFloat(Settings.zoomRange.lowerBound), current * (1 + magnification)))
+        pinchZoom = next
+        let rounded = Int(next.rounded())
+        guard rounded != settings.zoomPercent else { return }
+        settings.zoomPercent = rounded
+        relayout()
     }
 
     @objc private func setSize(_ sender: NSMenuItem) {
@@ -131,26 +210,46 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
         return NSScreen.main ?? NSScreen.screens[0]
     }
 
+    /// The picture's center on screen now, or where it would go.
+    private var pictureCenter: NSPoint {
+        if panel.isVisible { return NSPoint(x: panel.frame.midX, y: panel.frame.midY) }   // the window centers the picture
+        let L = currentLayout(on: screen)
+        return NSPoint(x: L.content.midX, y: L.content.midY)
+    }
+
+    private func currentLayout(on screen: NSScreen) -> Layout {
+        Layout.make(screen: screen, aspect: aspect, sizePercent: settings.sizePercent, shape: settings.shape,
+                    corner: settings.corner, freeCenter: settings.placement == .free ? settings.freeCenter : nil)
+    }
+
     @discardableResult
     private func relayout(animated: Bool = false) -> CGSize {
         let screen = self.screen
-        let L = Layout.make(screen: screen, aspect: aspect, sizePercent: settings.sizePercent,
-                            shape: settings.shape, corner: settings.corner)
+        let L = currentLayout(on: screen)
         let sameSize = panel.frame.size == L.window.size
+        let zoom = CGFloat(settings.zoomPercent) / 100
         panel.pipView.apply(L, shape: settings.shape, scale: screen.backingScaleFactor)
+        panel.pipView.setZoom(zoom)
         panel.setFrame(L.window, display: true, animate: animated && sameSize && panel.isVisible)
-        let pixels = L.capturePixels(scale: screen.backingScaleFactor, aspect: aspect, shape: settings.shape)
+        let pixels = L.capturePixels(scale: screen.backingScaleFactor, aspect: aspect, shape: settings.shape, zoom: zoom)
         capture.setPixelSize(pixels)
         return pixels
     }
 
-    /// After a drag: snap to the nearest corner of the display it was dropped on.
+    /// After a drag: snapped to the nearest corner of the display it was dropped on, or,
+    /// with free placement, left there (kept wholly on screen).
     private func dropped(at center: NSPoint) {
+        pinchZoom = nil
         let target = NSScreen.screens.first { $0.frame.contains(center) } ?? screen
+        settings.screenID = target.displayID
+        if settings.placement == .free {
+            settings.freeCenter = center
+            relayout()
+            return
+        }
         let area = target.visibleFrame
         let left = center.x < area.midX, top = center.y > area.midY
         settings.corner = top ? (left ? .topLeft : .topRight) : (left ? .bottomLeft : .bottomRight)
-        settings.screenID = target.displayID
         relayout(animated: true)
     }
 
@@ -166,6 +265,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
         if !panel.isVisible {
             lastStop = nil
             panel.orderFrontRegardless()
+            panel.pipView.flashNote()
         }
     }
 

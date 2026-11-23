@@ -32,10 +32,11 @@ Click the menu bar icon, or right-click the floating picture:
 
 - **Pick a Window / Pick Another Window**: opens macOS's window picker; a new choice replaces the current window.
 - **Stop**: closes the floating picture.
-- **Corner**: top left, top right, bottom left, or bottom right (the default).
+- **Position**: Snap to Corners (the default) or Stay Where Dropped. Drag the picture to move it: with Snap to Corners it settles into the nearest corner of the screen you drop it on, as macOS's own picture in picture does; with Stay Where Dropped it stays where you let go, kept wholly on screen.
 - **Size (Height of Screen)**: the picture's height as a share of the screen's height, from 10% to 90% (30% by default).
 - **Shape**: Rounded (the default) and Rectangle (sharp corners) show the whole window, never stretched; Circle shows the middle of it.
-- **Drag** the picture to move it. When you let go, it snaps to the nearest corner of the screen you dropped it on, as macOS's own picture in picture does.
+- **Zoom (Center of Window)**: 100% shows the whole window; 125% to 400% show its center larger, cutting away the edges, such as a call app's buttons. Scroll or pinch on the picture to zoom in 10% steps or smoothly.
+- **Hide from Screen Sharing** (on by default): keeps the picture out of screen sharing. A small note on the picture says whether people watching your share can see it; it shows for a few seconds when the picture appears, and whenever the pointer is over it.
 
 FloatPiP remembers your choices. It stops by itself when the window closes, or when you stop it from macOS's screen-sharing icon in the menu bar.
 
