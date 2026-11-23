@@ -16,7 +16,7 @@ final class Updater {
     /// The public half of the update-signing key (docs/UPDATES.md). Changing it means older versions
     /// can't verify newer updates, so it changes only if the private key is lost or exposed.
     nonisolated static let publicKey = "J3342F7iOUJGsj6g+kOkWe6RonmacKW4KFtHGnafY5M="
-    nonisolated static let latestURL = URL(string: "https://api.github.com/repos/ThePhilDiamond/FloatPiP/releases/latest")!
+    nonisolated static let latestURL = URL(string: "https://api.github.com/repos/ThePhilDiamond/WindowRaft/releases/latest")!
 
     enum Phase: Equatable { case idle, checking, upToDate, available(String), installing, failed(String) }
     private(set) var phase: Phase = .idle
@@ -29,7 +29,7 @@ final class Updater {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
     }
 
-    /// Whether FloatPiP checks by itself, a minute after opening and then once a day (on unless turned off).
+    /// Whether Window Raft checks by itself, a minute after opening and then once a day (on unless turned off).
     var automatic: Bool {
         get { UserDefaults.standard.object(forKey: "checkForUpdates") as? Bool ?? true }
         set { UserDefaults.standard.set(newValue, forKey: "checkForUpdates"); schedule() }
@@ -75,11 +75,11 @@ final class Updater {
         }
     }
 
-    /// Downloads, verifies and installs the update, then reopens FloatPiP.
+    /// Downloads, verifies and installs the update, then reopens Window Raft.
     @MainActor func install() async {
         guard case .available(let version) = phase else { return }
         guard let zip, let sig else {
-            phase = .failed("This release can't be installed from inside FloatPiP. Download it from its release page instead.")
+            phase = .failed("This release can't be installed from inside Window Raft. Download it from its release page instead.")
             return
         }
         phase = .installing
@@ -91,22 +91,22 @@ final class Updater {
             guard Updater.verify(zipData, signature: String(decoding: sigData, as: UTF8.self), publicKey: Updater.publicKey) else {
                 throw Problem("The update's signature didn't match, so it wasn't installed.")
             }
-            // 2. unpack it apart from everything else, and check it is FloatPiP at the version expected
-            let work = FileManager.default.temporaryDirectory.appendingPathComponent("FloatPiPUpdate-\(UUID().uuidString)")
+            // 2. unpack it apart from everything else, and check it is Window Raft at the version expected
+            let work = FileManager.default.temporaryDirectory.appendingPathComponent("WindowRaftUpdate-\(UUID().uuidString)")
             try FileManager.default.createDirectory(at: work, withIntermediateDirectories: true)
             try Updater.run("/usr/bin/ditto", ["-x", "-k", zipFile.path, work.path])
-            let app = work.appendingPathComponent("FloatPiP.app")
+            let app = work.appendingPathComponent("Window Raft.app")
             guard let info = Bundle(url: app)?.infoDictionary,
                   info["CFBundleIdentifier"] as? String == Bundle.main.bundleIdentifier,
                   info["CFBundleShortVersionString"] as? String == version else {
-                throw Problem("The download wasn't the expected version of FloatPiP.")
+                throw Problem("The download wasn't the expected version of Window Raft.")
             }
             // 2a. it must run on this Mac: otherwise a working copy would be replaced by one macOS
             // refuses to open, so it isn't installed, and isn't offered again
             let minimum = info["LSMinimumSystemVersion"] as? String
             guard Updater.runs(minimum: minimum) else {
                 UserDefaults.standard.set(version, forKey: Updater.needsNewerMacOSKey)
-                throw Problem("FloatPiP \(version) needs macOS \(minimum ?? "?") or later, so it wasn't installed.")
+                throw Problem("Window Raft \(version) needs macOS \(minimum ?? "?") or later, so it wasn't installed.")
             }
             try Updater.run("/usr/bin/codesign", ["--verify", "--deep", "--strict", app.path])
             // 3. replace this copy (the old one goes to the Trash, so it can be put back) and reopen

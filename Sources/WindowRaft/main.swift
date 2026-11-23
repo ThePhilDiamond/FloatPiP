@@ -14,14 +14,14 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        // FloatPiP's own mark, drawn by scripts/make-icon.swift as a template so macOS colors it for
+        // Window Raft's own mark, drawn by scripts/make-icon.swift as a template so macOS colors it for
         // light and dark menu bars; the system's picture-in-picture symbol if it is missing
         if let mark = Bundle.main.image(forResource: "MenuIcon") {
             mark.isTemplate = true
-            mark.accessibilityDescription = "FloatPiP"
+            mark.accessibilityDescription = "Window Raft"
             statusItem.button?.image = mark
         } else {
-            statusItem.button?.image = NSImage(systemSymbolName: "pip", accessibilityDescription: "FloatPiP")
+            statusItem.button?.image = NSImage(systemSymbolName: "pip", accessibilityDescription: "Window Raft")
         }
         let menu = NSMenu()
         menu.delegate = self
@@ -38,8 +38,8 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
         NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification,
                                                object: nil, queue: .main) { [weak self] _ in self?.relayout() }
         Updater.shared.schedule()
-        // FLOATPIP_UPDATE_TEST=1: check now and install if there is an update, reporting each step (docs/UPDATES.md)
-        if ProcessInfo.processInfo.environment["FLOATPIP_UPDATE_TEST"] != nil {
+        // WINDOWRAFT_UPDATE_TEST=1: check now and install if there is an update, reporting each step (docs/UPDATES.md)
+        if ProcessInfo.processInfo.environment["WINDOWRAFT_UPDATE_TEST"] != nil {
             Task { @MainActor in
                 await Updater.shared.check(quiet: false)
                 FileHandle.standardError.write(Data("update test: after check: \(Updater.shared.phase)\n".utf8))
@@ -67,7 +67,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
 
     private func fill(_ menu: NSMenu) {
         if case .available(let v) = Updater.shared.phase {
-            menu.addItem(item("Install FloatPiP \(v)…", #selector(installUpdate)))
+            menu.addItem(item("Install Window Raft \(v)…", #selector(installUpdate)))
             menu.addItem(item("What's New in \(v)", #selector(openReleasePage)))
             menu.addItem(.separator())
         }
@@ -141,7 +141,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
 
         menu.addItem(.separator())
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
-        let about = NSMenuItem(title: "FloatPiP v\(version)", action: nil, keyEquivalent: "")
+        let about = NSMenuItem(title: "Window Raft v\(version)", action: nil, keyEquivalent: "")
         about.isEnabled = false
         menu.addItem(about)
         let checking = Updater.shared.phase == .checking || Updater.shared.phase == .installing
@@ -151,7 +151,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
         let auto = item("Check for Updates Automatically", #selector(toggleAutomaticUpdates))
         auto.state = Updater.shared.automatic ? .on : .off
         menu.addItem(auto)
-        menu.addItem(NSMenuItem(title: "Quit FloatPiP", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        menu.addItem(NSMenuItem(title: "Quit Window Raft", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
     }
 
     private func item(_ title: String, _ action: Selector) -> NSMenuItem {
@@ -201,7 +201,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
             await Updater.shared.check(quiet: false)
             switch Updater.shared.phase {
             case .available(let v): offerUpdate(v)
-            case .upToDate: say("FloatPiP is up to date", "You have the latest version, \(Updater.currentVersion).")
+            case .upToDate: say("Window Raft is up to date", "You have the latest version, \(Updater.currentVersion).")
             case .failed(let why): say("Couldn't check for updates", why)
             default: break
             }
@@ -216,7 +216,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
     @objc private func installUpdate() {
         Task { @MainActor in
             await Updater.shared.install()
-            // reached only if it didn't install (on success FloatPiP reopens as the new version)
+            // reached only if it didn't install (on success Window Raft reopens as the new version)
             if case .failed(let why) = Updater.shared.phase {
                 say("The update wasn't installed", why)
                 Updater.shared.acknowledge()
@@ -231,8 +231,8 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
     private func offerUpdate(_ version: String) {
         NSApp.activate()
         let alert = NSAlert()
-        alert.messageText = "FloatPiP \(version) is available"
-        alert.informativeText = "You have \(Updater.currentVersion). Installing replaces this copy (the old one goes to the Trash) and reopens FloatPiP; a floating picture stops until you pick the window again."
+        alert.messageText = "Window Raft \(version) is available"
+        alert.informativeText = "You have \(Updater.currentVersion). Installing replaces this copy (the old one goes to the Trash) and reopens Window Raft; a floating picture stops until you pick the window again."
         alert.addButton(withTitle: "Install")
         alert.addButton(withTitle: "What's New")
         alert.addButton(withTitle: "Later")
@@ -370,7 +370,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
         panel.orderOut(nil)
         panel.pipView.clear()
         lastStop = reason
-        if let reason { NSLog("FloatPiP: \(reason)") }
+        if let reason { NSLog("Window Raft: \(reason)") }
     }
 }
 

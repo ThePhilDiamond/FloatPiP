@@ -1,5 +1,5 @@
-# On a version tag (v0.1.0), checks the version agrees everywhere, builds the app, and publishes the GitHub release
-# "FloatPiP 0.1.0" with its notes copied from CHANGELOG.md. The steps for a release are in RELEASING.md.
+# On a version tag (v0.2.0), checks the version agrees everywhere, builds the app, and publishes the GitHub release
+# "Window Raft 0.2.0" with its notes copied from CHANGELOG.md. The steps for a release are in RELEASING.md.
 name: Release
 
 on:
@@ -16,10 +16,10 @@ jobs:
       - uses: actions/checkout@v7
       - name: Check the tag, VERSION, Info.plist and CHANGELOG.md agree
         run: scripts/check-version.sh "$GITHUB_REF_NAME"
-      - run: swift build -c release && .build/release/FloatPiP --selftest
+      - run: swift build -c release && .build/release/WindowRaft --selftest
       - run: scripts/build-app.sh
       - name: Zip the app
-        run: cd build && ditto -c -k --keepParent FloatPiP.app "FloatPiP-${GITHUB_REF_NAME}.zip" && shasum -a 256 "FloatPiP-${GITHUB_REF_NAME}.zip" > SHA256SUMS.txt
+        run: cd build && ditto -c -k --keepParent "Window Raft.app" "WindowRaft-${GITHUB_REF_NAME}.zip" && shasum -a 256 "WindowRaft-${GITHUB_REF_NAME}.zip" > SHA256SUMS.txt
       - name: Sign the update for the in-app updater
         env:
           UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
@@ -27,7 +27,7 @@ jobs:
           if [ -z "$UPDATE_SIGNING_KEY" ]; then
             echo "::warning::UPDATE_SIGNING_KEY is not set, so the in-app updater will refuse this release"
           else
-            swift scripts/sign-update.swift "build/FloatPiP-${GITHUB_REF_NAME}.zip"
+            swift scripts/sign-update.swift "build/WindowRaft-${GITHUB_REF_NAME}.zip"
           fi
       - name: Release notes from CHANGELOG.md
         run: |
@@ -35,14 +35,14 @@ jobs:
           awk -v h="## [$v] " 'index($0, h) == 1 {on=1; next} /^## / || /^\[[^]]+\]: / {on=0} on' CHANGELOG.md > build/notes.md
           grep -q '^- ' build/notes.md || { echo "::error::CHANGELOG.md has no notes for $v"; exit 1; }
           echo "" >> build/notes.md
-          echo "**Downloads:** \`FloatPiP-${GITHUB_REF_NAME}.zip\` is the app (ad-hoc signed, not notarized: see the README's Quick start); \`.sig\` is its signature, which the in-app updater checks; \`SHA256SUMS.txt\` is its checksum. All changes: [CHANGELOG.md](https://github.com/${GITHUB_REPOSITORY}/blob/main/CHANGELOG.md)." >> build/notes.md
-          echo "TITLE=FloatPiP $v" >> "$GITHUB_ENV"
+          echo "**Downloads:** \`WindowRaft-${GITHUB_REF_NAME}.zip\` is the app (ad-hoc signed, not notarized: see the README's Quick start); \`.sig\` is its signature, which the in-app updater checks; \`SHA256SUMS.txt\` is its checksum. All changes: [CHANGELOG.md](https://github.com/${GITHUB_REPOSITORY}/blob/main/CHANGELOG.md)." >> build/notes.md
+          echo "TITLE=Window Raft $v" >> "$GITHUB_ENV"
           cat build/notes.md
       - uses: softprops/action-gh-release@v3
         with:
           files: |
-            build/FloatPiP-${{ github.ref_name }}.zip
-            build/FloatPiP-${{ github.ref_name }}.zip.sig
+            build/WindowRaft-${{ github.ref_name }}.zip
+            build/WindowRaft-${{ github.ref_name }}.zip.sig
             build/SHA256SUMS.txt
           name: ${{ env.TITLE }}
           body_path: build/notes.md

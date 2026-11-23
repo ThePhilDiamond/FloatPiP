@@ -1,5 +1,5 @@
 name: Report a problem
-description: FloatPiP isn't working right.
+description: Window Raft isn't working right.
 title: "Problem: "
 labels: [problem]
 body:
@@ -9,9 +9,9 @@ body:
   - type: input
     id: versions
     attributes:
-      label: FloatPiP and macOS versions
-      description: FloatPiP's version is in its menu, above Quit. macOS's is in the Apple menu ▸ About This Mac.
-      placeholder: FloatPiP v0.1.0, macOS 26.6.2
+      label: Window Raft and macOS versions
+      description: Window Raft's version is in its menu, above Quit. macOS's is in the Apple menu ▸ About This Mac.
+      placeholder: Window Raft v0.2.0, macOS 26.6.2
     validations: { required: true }
   - type: textarea
     id: what

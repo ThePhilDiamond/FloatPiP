@@ -8,7 +8,7 @@ protocol CaptureDelegate: AnyObject {
     func captureLayout(forAspect aspect: CGFloat) -> CGSize
     /// A new picture. Called on main.
     func captureDidReceive(_ surface: IOSurfaceRef)
-    /// Capture ended; `reason` is nil when FloatPiP stopped it. Called on main.
+    /// Capture ended; `reason` is nil when Window Raft stopped it. Called on main.
     func captureDidEnd(reason: String?)
 }
 
@@ -16,7 +16,7 @@ protocol CaptureDelegate: AnyObject {
 ///
 /// The system picker (SCContentSharingPicker) is used, not a list of our own:
 /// it shows live window previews, it handles single windows directly, and a
-/// window chosen in it may be captured without granting FloatPiP the Screen
+/// window chosen in it may be captured without granting Window Raft the Screen
 /// Recording permission, so nothing in System Settings has to change.
 final class Capture: NSObject, SCContentSharingPickerObserver, SCStreamDelegate, SCStreamOutput {
     weak var delegate: CaptureDelegate?
@@ -31,7 +31,7 @@ final class Capture: NSObject, SCContentSharingPickerObserver, SCStreamDelegate,
     /// The window's size in points and its points-to-pixels scale, to cap the capture size.
     private var windowPoints = CGSize.zero
     private var windowScale: CGFloat = 2
-    private let frameQueue = DispatchQueue(label: "FloatPiP.frames", qos: .userInteractive)
+    private let frameQueue = DispatchQueue(label: "WindowRaft.frames", qos: .userInteractive)
     private var watch: Timer?
 
     var isRunning: Bool { stream != nil }
@@ -68,7 +68,7 @@ final class Capture: NSObject, SCContentSharingPickerObserver, SCStreamDelegate,
         guard new != pixelSize else { return }
         pixelSize = new
         stream?.updateConfiguration(makeConfiguration()) { error in
-            if let error { NSLog("FloatPiP: could not resize the capture: \(error.localizedDescription)") }
+            if let error { NSLog("Window Raft: could not resize the capture: \(error.localizedDescription)") }
         }
     }
 

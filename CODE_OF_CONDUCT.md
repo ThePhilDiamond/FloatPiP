@@ -62,7 +62,7 @@ Instances of abusive, harassing, or otherwise unacceptable behavior may be
 reported to the community leaders responsible for enforcement through
 GitHub's private reporting: on this repository, open the **Security** tab and
 choose **Report a vulnerability**
-([direct link](https://github.com/ThePhilDiamond/FloatPiP/security/advisories/new)),
+([direct link](https://github.com/ThePhilDiamond/WindowRaft/security/advisories/new)),
 and start the title with "Conduct:". Only the maintainer can read it, and
 you'll get a reply there. The form is named for security problems, but it is
 also the private way to reach the maintainer about conduct.

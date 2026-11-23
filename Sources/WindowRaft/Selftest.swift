@@ -1,7 +1,7 @@
 import AppKit
 import CryptoKit
 
-/// `FloatPiP --selftest`: checks the panel's layout and the remembered
+/// `Window Raft --selftest`: checks the panel's layout and the remembered
 /// options without opening a window or capturing anything, so CI can run it.
 /// The expected numbers are the styling rules in README.md ("How it looks").
 enum Selftest {
@@ -94,7 +94,7 @@ enum Selftest {
         check(Updater.runs(minimum: "26.0", on: tahoe) && Updater.runs(minimum: nil, on: tahoe) && !Updater.runs(minimum: "27.0", on: tahoe),
               "an update needing a newer macOS is recognized")
         let key = Curve25519.Signing.PrivateKey()
-        let blob = Data("FloatPiP-v9.9.9.zip".utf8)
+        let blob = Data("WindowRaft-v9.9.9.zip".utf8)
         let signature = (try? key.signature(for: blob))?.base64EncodedString() ?? ""
         let pub = key.publicKey.rawRepresentation.base64EncodedString()
         check(Updater.verify(blob, signature: signature, publicKey: pub), "a correctly signed download verifies")
@@ -123,11 +123,11 @@ enum Selftest {
         scratch.removePersistentDomain(forName: suite)
 
         if failures.isEmpty {
-            print("FloatPiP selftest: all \(passed) checks passed.")
+            print("Window Raft selftest: all \(passed) checks passed.")
             return 0
         }
         for f in failures { print("FAILED: \(f)") }
-        print("FloatPiP selftest: \(failures.count) of \(passed + failures.count) checks failed.")
+        print("Window Raft selftest: \(failures.count) of \(passed + failures.count) checks failed.")
         return 1
     }
 }

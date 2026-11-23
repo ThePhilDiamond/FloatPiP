@@ -2,13 +2,13 @@
 import PackageDescription
 
 let package = Package(
-    name: "FloatPiP",
+    name: "WindowRaft",
     platforms: [.macOS("26.0")],
     products: [
-        .executable(name: "FloatPiP", targets: ["FloatPiP"]),
+        .executable(name: "WindowRaft", targets: ["WindowRaft"]),
     ],
     targets: [
         // ScreenCaptureKit captures the chosen window; AppKit draws the panel and the menu.
-        .executableTarget(name: "FloatPiP", linkerSettings: [.linkedFramework("ScreenCaptureKit")]),
+        .executableTarget(name: "WindowRaft", linkerSettings: [.linkedFramework("ScreenCaptureKit")]),
     ]
 )
