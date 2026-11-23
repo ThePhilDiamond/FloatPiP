@@ -24,6 +24,15 @@ final class PiPPanel: NSPanel {
     override var canBecomeKey: Bool { false }
     override var canBecomeMain: Bool { false }
 
+    /// macOS keeps a window's top edge below the menu bar. This window's top edge is
+    /// transparent room for the shadow, about a third of the picture's height, so that rule
+    /// kept the picture itself well below the top of the screen, both when dragged and in
+    /// the top corners. FloatPiP places the picture itself, clear of the menu bar
+    /// (Layout.make), so the window is left where it is put.
+    override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
+        frameRect
+    }
+
     var pipView: PiPView { contentView as! PiPView }
 }
 

@@ -1,0 +1,1 @@
+- The floating picture can now be dragged right up to the top of the screen, and the Top Left and Top Right corners place it just under the menu bar. Before, it stopped about an eighth of the way down the screen.
