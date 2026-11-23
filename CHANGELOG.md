@@ -4,6 +4,12 @@ All notable changes to Window Raft (called FloatPiP until 0.2.0) are listed here
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-11-23
+
+### Fixed
+
+- The update offer no longer closes when you want to read what's new: it now lists the release's changes itself, with a link to the release page that leaves the offer open. Before, its What's New button closed it, and you had to check for updates again. After you choose Later, the menu's Check for Updates item says an update is available and opens the offer again.
+
 ## [0.4.0] - 2026-11-23
 
 ### Changed
@@ -54,7 +60,8 @@ All notable changes to Window Raft (called FloatPiP until 0.2.0) are listed here
 - Drag the picture to move it; it snaps to the nearest corner. FloatPiP remembers your choices.
 - The picture floats the way macOS and calling apps show floating video: two soft shadows and a faint hairline, with no border.
 
-[Unreleased]: https://github.com/ThePhilDiamond/WindowRaft/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/ThePhilDiamond/WindowRaft/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/ThePhilDiamond/WindowRaft/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/ThePhilDiamond/WindowRaft/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/ThePhilDiamond/WindowRaft/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/ThePhilDiamond/WindowRaft/compare/v0.1.0...v0.2.0
