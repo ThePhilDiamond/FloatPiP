@@ -155,7 +155,10 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
         about.isEnabled = false
         menu.addItem(about)
         let checking = Updater.shared.phase == .checking || Updater.shared.phase == .installing
-        let check = item(checking ? "Checking for Updates…" : "Check for Updates…", #selector(checkForUpdates))
+        var checkTitle = checking ? "Checking for Updates…" : "Check for Updates…"
+        // an update found but not installed (Later) stays on this item, which opens its offer again
+        if case .available(let v) = Updater.shared.phase { checkTitle = "Update Available: Window Raft \(v)…" }
+        let check = item(checkTitle, #selector(checkForUpdates))
         check.isEnabled = !checking
         menu.addItem(check)
         let auto = item("Check for Updates Automatically", #selector(toggleAutomaticUpdates))
@@ -207,6 +210,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
     // MARK: Updates
 
     @objc private func checkForUpdates() {
+        if case .available(let v) = Updater.shared.phase { offerUpdate(v); return }
         Task { @MainActor in
             await Updater.shared.check(quiet: false)
             switch Updater.shared.phase {
@@ -244,13 +248,61 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
         alert.messageText = "Window Raft \(version) is available"
         alert.informativeText = "You have \(Updater.currentVersion). Installing replaces this copy (the old one goes to the Trash) and reopens Window Raft; a floating picture stops until you pick the window again."
         alert.addButton(withTitle: "Install")
-        alert.addButton(withTitle: "What's New")
         alert.addButton(withTitle: "Later")
-        switch alert.runModal() {
-        case .alertFirstButtonReturn: installUpdate()
-        case .alertSecondButtonReturn: openReleasePage()
-        default: break
+        // What's new is shown here, not in a button: an alert's buttons all close it, which lost the offer
+        alert.accessoryView = whatsNewView(version)
+        if alert.runModal() == .alertFirstButtonReturn { installUpdate() }
+    }
+
+    /// The release's notes, scrolling if long, and a link to its page on GitHub, which opens in the
+    /// browser and leaves the offer open.
+    private func whatsNewView(_ version: String) -> NSView {
+        let small = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+        let text = NSMutableAttributedString()
+        let bullet = NSMutableParagraphStyle()
+        bullet.headIndent = 12
+        bullet.paragraphSpacing = 3
+        bullet.tabStops = [NSTextTab(textAlignment: .left, location: 12)]
+        bullet.defaultTabInterval = 12
+        let heading = NSMutableParagraphStyle()
+        heading.paragraphSpacingBefore = 6
+        heading.paragraphSpacing = 2
+        let sections = Updater.shared.releaseNotes.map(Updater.whatsNew) ?? []
+        // label colors follow light and dark mode (without one, text is drawn black)
+        let ink = NSColor.labelColor
+        text.append(NSAttributedString(string: "What's new in \(version)\n", attributes: [.font: NSFont.boldSystemFont(ofSize: NSFont.systemFontSize), .foregroundColor: ink]))
+        for section in sections {
+            text.append(NSAttributedString(string: section.heading + "\n", attributes: [.font: NSFont.boldSystemFont(ofSize: NSFont.smallSystemFontSize), .foregroundColor: ink, .paragraphStyle: heading]))
+            for item in section.items {
+                text.append(NSAttributedString(string: "•\t" + item + "\n", attributes: [.font: small, .foregroundColor: ink, .paragraphStyle: bullet]))
+            }
         }
+        if sections.isEmpty {
+            text.append(NSAttributedString(string: "The release's notes couldn't be read here.\n", attributes: [.font: small, .foregroundColor: ink]))
+        }
+        if let page = Updater.shared.releasePage {
+            let linkStyle = NSMutableParagraphStyle()
+            linkStyle.paragraphSpacingBefore = 6
+            text.append(NSAttributedString(string: "Release page on GitHub", attributes: [.font: small, .link: page, .paragraphStyle: linkStyle]))
+        }
+        let width: CGFloat = 340
+        let view = NSTextView(frame: NSRect(x: 0, y: 0, width: width, height: 10))
+        view.isEditable = false
+        view.isSelectable = true            // links need it
+        view.drawsBackground = false
+        view.textContainerInset = .zero
+        view.textContainer?.lineFragmentPadding = 0
+        view.textStorage?.setAttributedString(text)
+        view.layoutManager?.ensureLayout(for: view.textContainer!)
+        let used = view.layoutManager?.usedRect(for: view.textContainer!).height ?? 100
+        let height = min(ceil(used) + 2, 220)
+        view.frame.size.height = max(ceil(used) + 2, height)
+        let scroll = NSScrollView(frame: NSRect(x: 0, y: 0, width: width, height: height))
+        scroll.hasVerticalScroller = used + 2 > 220
+        scroll.drawsBackground = false
+        scroll.borderType = .noBorder
+        scroll.documentView = view
+        return scroll
     }
 
     private func say(_ title: String, _ text: String) {

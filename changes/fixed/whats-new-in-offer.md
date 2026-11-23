@@ -1,0 +1,1 @@
+- The update offer no longer closes when you want to read what's new: it now lists the release's changes itself, with a link to the release page that leaves the offer open. Before, its What's New button closed it, and you had to check for updates again. After you choose Later, the menu's Check for Updates item says an update is available and opens the offer again.

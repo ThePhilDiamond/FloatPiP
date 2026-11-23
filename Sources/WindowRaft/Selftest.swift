@@ -101,6 +101,12 @@ enum Selftest {
         check(!Updater.verify(blob + Data([0]), signature: signature, publicKey: pub), "a changed download is refused")
         check(!Updater.verify(blob, signature: signature, publicKey: Updater.publicKey), "a download signed with another key is refused")
         check(Data(base64Encoded: Updater.publicKey)?.count == 32, "the built-in update key is a 32-byte Ed25519 public key")
+        // What's new, read from notes shaped like the release workflow's (CHANGELOG.md's section, then the downloads line).
+        let notes = "\n### Added\n\n- One **new** thing.\n- Another.\n\n### Changed\n\n### Fixed\n\n- A `fix`.\n\n\n**Downloads:** `WindowRaft-v9.9.9.zip` is the app.\n"
+        let news = Updater.whatsNew(notes)
+        check(news.map(\.heading) == ["Added", "Fixed"], "what's new keeps headings with items, in order, got \(news.map(\.heading))")
+        check(news.first?.items == ["One new thing.", "Another."] && news.last?.items == ["A fix."], "what's new lists the items without Markdown marks, got \(news.map(\.items))")
+        check(Updater.whatsNew("**Downloads:** the app.").isEmpty, "the downloads line alone gives nothing to show")
 
         // Remembered options, in a scratch defaults domain.
         let suite = "io.github.thephildiamond.FloatPiP.selftest"
