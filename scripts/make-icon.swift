@@ -541,6 +541,68 @@ func taperedCrescents(_ s: CGFloat, cx: CGFloat, cy: CGFloat, ring r: (w: CGFloa
 }
 
 
+/// Round 16 (Phil: "a raft with logs floating atop the water"): a raft of logs lying on the
+/// water inside the inner ripple, seen from above at the ripples' angle, with the small picture
+/// standing on its deck. It is drawn over the near ripples, with a gap of water around it, so it
+/// rests on the surface and the ripples spread from under it.
+/// Variants: "deck" (four logs, level), "decktilt" (rocking a little), "deck5" (five logs), "deckplain" (log ends
+/// without rings), "decksmall" (a smaller raft, inside the inner ripple).
+func drawDeckRaft(_ s: CGFloat, _ st: CornerStyle, center c: NSPoint, ring: (w: CGFloat, h: CGFloat, t: CGFloat), pic: (CGFloat, CGFloat), line: CGFloat) {
+    let a0 = ring.w * s / 2, b0 = ring.h * s / 2
+    let shape = NSBezierPath(), cores = NSBezierPath()
+    var yFront = c.y - b0 * 0.45, yTop = c.y + b0 * 2.05                   // the deck's near and far edges
+    var W = a0 * 1.80
+    if st.raft.hasPrefix("deckacross") {
+        // logs lying across, side by side from near to far: long capsules, their round ends at the sides
+        let n = st.raft == "deckacross4" ? 4 : 3
+        W = a0 * (st.raft == "deckacrossshort" ? 1.45 : 1.75)
+        // logs thick enough to show at small sizes: each about 3.4% of the icon high
+        let lh = s * (n == 4 ? 0.028 : 0.036), gap = s * 0.010
+        yFront = c.y - lh * 1.4; yTop = yFront + lh * CGFloat(n)
+        for i in 0..<n {
+            // nearer logs a touch wider, as they are closer
+            let wi = W * (1 + 0.05 * CGFloat(n - 1 - i)) , y = yFront + lh * CGFloat(i) + gap / 2
+            shape.append(NSBezierPath(roundedRect: NSRect(x: c.x - wi / 2, y: y, width: wi, height: lh - gap), xRadius: (lh - gap) / 2, yRadius: (lh - gap) / 2))
+            if st.raft == "deckacrossrings" {
+                // the logs' cut ends: a ring of grain at each side
+                let k = (lh - gap) * 0.42, my = y + (lh - gap) / 2
+                for ex in [c.x - wi / 2 + (lh - gap) / 2, c.x + wi / 2 - (lh - gap) / 2] {
+                    cores.append(NSBezierPath(ovalIn: NSRect(x: ex - k / 2, y: my - k / 2, width: k, height: k)))
+                }
+            }
+        }
+    } else {
+    let n = st.raft == "deck5" ? 5 : 4
+    let lw = W / CGFloat(n), gap = s * 0.009
+    for i in 0..<n {
+        let x = c.x - W / 2 + lw * CGFloat(i) + gap / 2, lwi = lw - gap
+        // the log's top, running away from us, and its round end facing us
+        shape.append(NSBezierPath(roundedRect: NSRect(x: x, y: yFront, width: lwi, height: yTop - yFront), xRadius: lwi / 2, yRadius: lwi / 2 * 0.6))
+        shape.append(NSBezierPath(ovalIn: NSRect(x: x, y: yFront - lwi * 0.40, width: lwi, height: lwi * 0.80)))
+        if st.raft != "deckplain" {
+            let k = lwi * 0.34
+            cores.append(NSBezierPath(ovalIn: NSRect(x: x + lwi / 2 - k / 2, y: yFront - k * 0.40, width: k, height: k * 0.80)))
+        }
+    }
+    }
+    // the picture stands at the back of the deck, so the logs show in front of it
+    let across = st.raft.hasPrefix("deckacross")
+    let pw = across ? pic.0 * 0.84 : min(pic.0 * 0.86, W * 0.74), ph = pic.1 * (across ? 0.70 : 0.74)
+    let base = yTop - (yTop - yFront) * (across ? 0.34 : 0.30)
+    let picture = NSBezierPath(roundedRect: NSRect(x: c.x - pw / 2, y: base, width: pw, height: ph), xRadius: ph * 0.16, yRadius: ph * 0.16)
+    let tilt: CGFloat = st.raft == "decktilt" ? -5 : 0
+    let tr = NSAffineTransform()
+    tr.translateX(by: c.x, yBy: c.y); tr.rotate(byDegrees: tilt); tr.translateX(by: -c.x, yBy: -c.y)
+    let deck = tr.transform(shape), pict = tr.transform(picture), ends = tr.transform(cores)
+    // a gap of water around the raft and between the deck and the picture
+    let outline = NSBezierPath(); outline.append(deck); outline.append(pict)
+    waterFill(s, NSBezierPath(cgPath: outline.cgPath.copy(strokingWithWidth: line * 1.1, lineCap: .round, lineJoin: .round, miterLimit: 4)))
+    white.setFill(); deck.fill()
+    waterFill(s, NSBezierPath(cgPath: pict.cgPath.copy(strokingWithWidth: line * 0.7, lineCap: .round, lineJoin: .round, miterLimit: 4)))
+    white.setFill(); pict.fill()
+    if !ends.isEmpty { waterFill(s, ends) }
+}
+
 func levelCornerStyled(_ s: CGFloat, _ st: CornerStyle) {
     drawTile(s)
     let rad = st.angle * .pi / 180
@@ -592,6 +654,7 @@ func levelCornerStyled(_ s: CGFloat, _ st: CornerStyle) {
     let frame = st.noFrame ? NSBezierPath() : turn.transform(NSBezierPath(roundedRect: frameRect.insetBy(dx: line / 2, dy: line / 2), xRadius: radius - line / 2, yRadius: radius - line / 2))
     frame.lineWidth = line
     func picture() {
+        if st.raft.hasPrefix("deck") { return }   // drawn last, on top of the water, by drawDeckRaft
         if st.curve.a == 0 {
             afloat(s, waterline: waterline, center: pc, degrees: st.angle) {
                 let r = NSRect(x: pc.x - w / 2, y: pc.y - h / 2, width: w, height: h)
@@ -726,6 +789,7 @@ func levelCornerStyled(_ s: CGFloat, _ st: CornerStyle) {
             NSGraphicsContext.restoreGraphicsState()
         }
         fillFront()
+        if st.raft.hasPrefix("deck") { drawDeckRaft(s, st, center: NSPoint(x: rcx, y: waterline), ring: rings[0], pic: (w, h), line: line) }
         return
     }
     NSGraphicsContext.saveGraphicsState()
@@ -887,6 +951,15 @@ var raftPaddle = outerBoth; raftPaddle.raft = "paddle"
 var raftPaddle2 = outerBoth; raftPaddle2.raft = "paddle2"
 var raftLogEnds4 = outerBoth; raftLogEnds4.raft = "logends4"
 var raftLogsPaddle = outerBoth; raftLogsPaddle.raft = "logspaddle2"
+var raftDeck = outerBoth; raftDeck.raft = "deck"
+var raftDeckTilt = outerBoth; raftDeckTilt.raft = "decktilt"
+var raftDeck4 = outerBoth; raftDeck4.raft = "deck5"
+var raftDeckSmall = outerBoth; raftDeckSmall.raft = "decksmall"
+var raftAcross = outerBoth; raftAcross.raft = "deckacross"
+var raftAcross4 = outerBoth; raftAcross4.raft = "deckacross4"
+var raftAcrossShort = outerBoth; raftAcrossShort.raft = "deckacrossshort"
+var raftAcrossRings = outerBoth; raftAcrossRings.raft = "deckacrossrings"
+var raftDeckPlain = outerBoth; raftDeckPlain.raft = "deckplain"
 
 var menuBold = outerBoth
 menuBold.line = 0.055
@@ -916,6 +989,7 @@ menuBobMid.noFrame = true
 var menuBobPaddle = menuBob; menuBobPaddle.raft = "paddle2"
 var menuBobLogsPaddle = menuBob; menuBobLogsPaddle.raft = "logspaddle2"
 var menuBobPaddleLow = menuBobPaddle; menuBobPaddleLow.lowGrip = true
+var menuBobAcross = menuBob; menuBobAcross.raft = "deckacross"
 var menuBobLogsPaddleLow = menuBobLogsPaddle; menuBobLogsPaddleLow.lowGrip = true
 var curveCut = curveDeep
 curveCut.knockRing = 0
@@ -1155,8 +1229,12 @@ let options: [(String, (CGFloat) -> Void)] = [
     ("raftlogends", { levelCornerStyled($0, raftLogEnds) }), ("raftpaddle", { levelCornerStyled($0, raftPaddle) }),
     ("raftpaddle2", { levelCornerStyled($0, raftPaddle2) }), ("raftlogends4", { levelCornerStyled($0, raftLogEnds4) }),
     ("raftlogspaddle", { levelCornerStyled($0, raftLogsPaddle) }),
+    ("raftdeck", { levelCornerStyled($0, raftDeck) }), ("raftdecktilt", { levelCornerStyled($0, raftDeckTilt) }),
+    ("raftdeck5", { levelCornerStyled($0, raftDeck4) }), ("raftdecksmall", { levelCornerStyled($0, raftDeckSmall) }),
+    ("raftacross", { levelCornerStyled($0, raftAcross) }), ("raftacross4", { levelCornerStyled($0, raftAcross4) }),
+    ("raftacrossshort", { levelCornerStyled($0, raftAcrossShort) }), ("raftacrossrings", { levelCornerStyled($0, raftAcrossRings) }), ("raftdeckplain", { levelCornerStyled($0, raftDeckPlain) }),
     ("menubobpaddle", { levelCornerStyled($0, menuBobPaddle) }), ("menuboblogspaddle", { levelCornerStyled($0, menuBobLogsPaddle) }),
-    ("menubobpaddlelow", { levelCornerStyled($0, menuBobPaddleLow) }), ("menuboblogspaddlelow", { levelCornerStyled($0, menuBobLogsPaddleLow) }), ("menubold", { levelCornerStyled($0, menuBold) }),
+    ("menubobpaddlelow", { levelCornerStyled($0, menuBobPaddleLow) }), ("menubobacross", { levelCornerStyled($0, menuBobAcross) }), ("menuboblogspaddlelow", { levelCornerStyled($0, menuBobLogsPaddleLow) }), ("menubold", { levelCornerStyled($0, menuBold) }),
     ("menumid", { levelCornerStyled($0, menuMid) }),
     ("menubob", { levelCornerStyled($0, menuBob) }), ("menubobmid", { levelCornerStyled($0, menuBobMid) }),
     ("menuglyph", { levelCornerStyled($0, menuGlyph) }), ("menuglyph2", { levelCornerStyled($0, menuGlyph2) }),
