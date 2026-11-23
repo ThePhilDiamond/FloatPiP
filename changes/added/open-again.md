@@ -1,1 +1,0 @@
-- If macOS hides Window Raft's menu bar icon, as it does behind the camera notch when the menu bar is full, open Window Raft again from Finder or Spotlight to show its menu under the pointer.

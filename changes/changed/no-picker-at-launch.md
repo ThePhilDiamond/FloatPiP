@@ -1,1 +1,0 @@
-- Window Raft no longer opens the window picker when it starts, where the picker covered its menu bar icon. Choose Pick a Window… from its menu instead.
