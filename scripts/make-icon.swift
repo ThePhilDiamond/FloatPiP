@@ -675,8 +675,10 @@ func levelCornerStyled(_ s: CGFloat, _ st: CornerStyle) {
         shaft.lineCapStyle = .round
         let bladeC = NSPoint(x: grip.x + dx * (st.oar ? 0.88 : 0.86), y: grip.y + dy * (st.oar ? 0.88 : 0.86))
         let bw: CGFloat = bold ? 0.040 : 0.032
+        // the oar's head as ripplewin draws it: a flat-sided pill, 1.65 times as long as it is wide
+        let headL = len * 0.34, headH = headL / 1.65
         let blade = st.oar
-            ? NSBezierPath(roundedRect: NSRect(x: -len * 0.17, y: -s * 0.032, width: len * 0.34, height: s * 0.064), xRadius: s * 0.030, yRadius: s * 0.030)
+            ? NSBezierPath(roundedRect: NSRect(x: -headL / 2, y: -headH / 2, width: headL, height: headH), xRadius: headH * 0.47, yRadius: headH * 0.47)
             : NSBezierPath(ovalIn: NSRect(x: -len * 0.17, y: -s * bw, width: len * 0.34, height: s * bw * 2))
         let bt = NSAffineTransform(); bt.translateX(by: bladeC.x, yBy: bladeC.y); bt.rotate(byRadians: atan2(dy, dx))
         let bladePath = bt.transform(blade)
@@ -686,9 +688,18 @@ func levelCornerStyled(_ s: CGFloat, _ st: CornerStyle) {
         shaft.lineWidth = s * 0.042
         waterFill(s, NSBezierPath(cgPath: shaft.cgPath.copy(strokingWithWidth: s * 0.044, lineCap: .round, lineJoin: .round, miterLimit: 4)))
         waterFill(s, NSBezierPath(cgPath: bladePath.cgPath.copy(strokingWithWidth: s * 0.022, lineCap: .round, lineJoin: .round, miterLimit: 4)))
-        shaft.lineWidth = s * (st.oar ? 0.019 : (bold ? 0.026 : 0.020))
-        white.setStroke(); shaft.stroke()
-        white.setFill(); bladePath.fill()
+        if st.oar {
+            // as ripplewin: the shaft's outline and the head filled as one shape, after a thin line of water around
+            // their outlines, so the shaft's rounded end shows inside the head where they meet
+            let oar = NSBezierPath(cgPath: shaft.cgPath.copy(strokingWithWidth: s * 0.019, lineCap: .round, lineJoin: .round, miterLimit: 4))
+            oar.append(bladePath)
+            waterFill(s, NSBezierPath(cgPath: oar.cgPath.copy(strokingWithWidth: s * 0.026, lineCap: .round, lineJoin: .round, miterLimit: 4)))
+            white.setFill(); oar.fill()
+        } else {
+            shaft.lineWidth = s * (bold ? 0.026 : 0.020)
+            white.setStroke(); shaft.stroke()
+            white.setFill(); bladePath.fill()
+        }
         NSGraphicsContext.restoreGraphicsState()
     }
     }
