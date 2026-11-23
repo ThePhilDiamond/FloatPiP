@@ -1,4 +1,5 @@
 import AppKit
+import CryptoKit
 
 /// `FloatPiP --selftest`: checks the panel's layout and the remembered
 /// options without opening a window or capturing anything, so CI can run it.
@@ -85,6 +86,21 @@ enum Selftest {
         check(near(Layout.zoomRect(4).width, 0.25, 0.0001) && near(Layout.zoomRect(4).midX, 0.5, 0.0001), "400% shows the center quarter each way")
         let zpx = d.capturePixels(scale: 2, aspect: 16.0 / 9.0, shape: .rounded, zoom: 2)
         check(zpx == CGSize(width: 2040, height: 1148), "at 200% the window is captured twice as large, got \(zpx)")
+
+        // Updates: version order, the macOS check, and the signature check with a throwaway key.
+        check(Updater.newer("0.2.0", than: "0.1.0") && Updater.newer("0.10.0", than: "0.9.9") && !Updater.newer("0.1.0", than: "0.1.0") && !Updater.newer("0.1", than: "0.1.0"),
+              "versions compare by number, part by part")
+        let tahoe = OperatingSystemVersion(majorVersion: 26, minorVersion: 6, patchVersion: 2)
+        check(Updater.runs(minimum: "26.0", on: tahoe) && Updater.runs(minimum: nil, on: tahoe) && !Updater.runs(minimum: "27.0", on: tahoe),
+              "an update needing a newer macOS is recognized")
+        let key = Curve25519.Signing.PrivateKey()
+        let blob = Data("FloatPiP-v9.9.9.zip".utf8)
+        let signature = (try? key.signature(for: blob))?.base64EncodedString() ?? ""
+        let pub = key.publicKey.rawRepresentation.base64EncodedString()
+        check(Updater.verify(blob, signature: signature, publicKey: pub), "a correctly signed download verifies")
+        check(!Updater.verify(blob + Data([0]), signature: signature, publicKey: pub), "a changed download is refused")
+        check(!Updater.verify(blob, signature: signature, publicKey: Updater.publicKey), "a download signed with another key is refused")
+        check(Data(base64Encoded: Updater.publicKey)?.count == 32, "the built-in update key is a 32-byte Ed25519 public key")
 
         // Remembered options, in a scratch defaults domain.
         let suite = "io.github.thephildiamond.FloatPiP.selftest"

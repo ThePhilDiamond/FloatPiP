@@ -37,6 +37,18 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
         applySharing()
         NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification,
                                                object: nil, queue: .main) { [weak self] _ in self?.relayout() }
+        Updater.shared.schedule()
+        // FLOATPIP_UPDATE_TEST=1: check now and install if there is an update, reporting each step (docs/UPDATES.md)
+        if ProcessInfo.processInfo.environment["FLOATPIP_UPDATE_TEST"] != nil {
+            Task { @MainActor in
+                await Updater.shared.check(quiet: false)
+                FileHandle.standardError.write(Data("update test: after check: \(Updater.shared.phase)\n".utf8))
+                if case .available = Updater.shared.phase {
+                    await Updater.shared.install()
+                    FileHandle.standardError.write(Data("update test: after install: \(Updater.shared.phase)\n".utf8))
+                }
+            }
+        }
         pickWindow()
     }
 
@@ -54,6 +66,11 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
     }
 
     private func fill(_ menu: NSMenu) {
+        if case .available(let v) = Updater.shared.phase {
+            menu.addItem(item("Install FloatPiP \(v)…", #selector(installUpdate)))
+            menu.addItem(item("What's New in \(v)", #selector(openReleasePage)))
+            menu.addItem(.separator())
+        }
         menu.addItem(item(capture.isRunning ? "Pick Another Window…" : "Pick a Window…", #selector(pickWindow)))
         let stop = item("Stop", #selector(stopPiP))
         stop.isEnabled = capture.isRunning
@@ -127,6 +144,13 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
         let about = NSMenuItem(title: "FloatPiP v\(version)", action: nil, keyEquivalent: "")
         about.isEnabled = false
         menu.addItem(about)
+        let checking = Updater.shared.phase == .checking || Updater.shared.phase == .installing
+        let check = item(checking ? "Checking for Updates…" : "Check for Updates…", #selector(checkForUpdates))
+        check.isEnabled = !checking
+        menu.addItem(check)
+        let auto = item("Check for Updates Automatically", #selector(toggleAutomaticUpdates))
+        auto.state = Updater.shared.automatic ? .on : .off
+        menu.addItem(auto)
         menu.addItem(NSMenuItem(title: "Quit FloatPiP", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
     }
 
@@ -168,6 +192,63 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
         panel.pipView.setNote(settings.hideFromSharing
             ? ["Not visible in screen shares (change or hide this in the menu)", "Not visible in screen shares", "Not shared"]
             : ["Visible in screen shares (change or hide this in the menu)", "Visible in screen shares", "Shared"])
+    }
+
+    // MARK: Updates
+
+    @objc private func checkForUpdates() {
+        Task { @MainActor in
+            await Updater.shared.check(quiet: false)
+            switch Updater.shared.phase {
+            case .available(let v): offerUpdate(v)
+            case .upToDate: say("FloatPiP is up to date", "You have the latest version, \(Updater.currentVersion).")
+            case .failed(let why): say("Couldn't check for updates", why)
+            default: break
+            }
+            Updater.shared.acknowledge()
+        }
+    }
+
+    @objc private func toggleAutomaticUpdates() {
+        Updater.shared.automatic.toggle()
+    }
+
+    @objc private func installUpdate() {
+        Task { @MainActor in
+            await Updater.shared.install()
+            // reached only if it didn't install (on success FloatPiP reopens as the new version)
+            if case .failed(let why) = Updater.shared.phase {
+                say("The update wasn't installed", why)
+                Updater.shared.acknowledge()
+            }
+        }
+    }
+
+    @objc private func openReleasePage() {
+        if let page = Updater.shared.releasePage { NSWorkspace.shared.open(page) }
+    }
+
+    private func offerUpdate(_ version: String) {
+        NSApp.activate()
+        let alert = NSAlert()
+        alert.messageText = "FloatPiP \(version) is available"
+        alert.informativeText = "You have \(Updater.currentVersion). Installing replaces this copy (the old one goes to the Trash) and reopens FloatPiP; a floating picture stops until you pick the window again."
+        alert.addButton(withTitle: "Install")
+        alert.addButton(withTitle: "What's New")
+        alert.addButton(withTitle: "Later")
+        switch alert.runModal() {
+        case .alertFirstButtonReturn: installUpdate()
+        case .alertSecondButtonReturn: openReleasePage()
+        default: break
+        }
+    }
+
+    private func say(_ title: String, _ text: String) {
+        NSApp.activate()
+        let alert = NSAlert()
+        alert.messageText = title
+        alert.informativeText = text
+        alert.runModal()
     }
 
     @objc private func setPlacement(_ sender: NSMenuItem) {

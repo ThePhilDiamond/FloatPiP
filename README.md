@@ -12,7 +12,7 @@ FloatPiP is a small, free, open-source macOS menu bar app. Pick any window, such
 
 - FloatPiP sees only the window you pick in macOS's own window picker, and only while it is floating. It needs no Screen Recording permission.
 - Nothing is saved: each picture is drawn on screen and discarded.
-- FloatPiP never goes online. No account, no analytics, no update checks.
+- No account, no analytics. FloatPiP goes online only to check GitHub for a newer version, a minute after it opens and then once a day (turn that off in its menu), and to download an update you choose to install. See [docs/UPDATES.md](docs/UPDATES.md).
 
 ## System requirements
 

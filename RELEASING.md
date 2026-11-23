@@ -19,17 +19,16 @@ One number names a version everywhere:
 | Git tag | `v0.1.0` |
 | GitHub release title | `FloatPiP 0.1.0` |
 | CHANGELOG.md heading | `## [0.1.0] - 2026-11-22` |
-| Downloads | `FloatPiP-v0.1.0.zip`, `SHA256SUMS.txt` |
+| Downloads | `FloatPiP-v0.1.0.zip`, `FloatPiP-v0.1.0.zip.sig`, `SHA256SUMS.txt` |
 
 `scripts/check-version.sh` checks they agree. CI runs it on every change, and the release workflow runs it with the tag, so a release with mismatched numbers stops before anything is published.
 
 ## What a release contains
 
 - **`FloatPiP-vX.Y.Z.zip`**: the app, built by GitHub from the tagged code, ad-hoc signed (not yet notarized).
+- **`FloatPiP-vX.Y.Z.zip.sig`**: an Ed25519 signature of the zip. The in-app updater installs an update only if this checks out against the key built into the app (see [docs/UPDATES.md](docs/UPDATES.md)).
 - **`SHA256SUMS.txt`**: the zip's checksum, to check a download by hand.
 - **Notes**: copied from the version's section of [CHANGELOG.md](CHANGELOG.md), word for word.
-
-FloatPiP has no in-app updater, so releases carry no update signature.
 
 ## How changes reach main
 
@@ -44,8 +43,9 @@ Every change, the maintainer's included, goes through a pull request: `main` acc
    - Set `VERSION` and `CFBundleShortVersionString` in `Info.plist` to X.Y.Z, and raise `CFBundleVersion` by one.
    - Run `scripts/check-version.sh vX.Y.Z`, `swift build -c release`, `.build/release/FloatPiP --selftest`, and `scripts/build-app.sh`.
 4. **Merge, then tag**: once `build` passes, squash-merge the pull request, pull `main`, and tag the merged commit: `git tag -a vX.Y.Z -m "FloatPiP X.Y.Z"`, then push the tag. The release workflow checks the numbers, builds, runs the selftest, zips the app, and publishes the release with its title, notes, and downloads.
-5. **Check the release**: the zip's checksum matches `SHA256SUMS.txt`, the app's menu shows vX.Y.Z, and it floats a window.
+5. **Check the release**: the zip's checksum matches `SHA256SUMS.txt`, its signature verifies, the app's menu shows vX.Y.Z, and it floats a window.
 
 ## History
 
 - 0.1.0 (22 November 2026) was the first commit on `main`, made before the pull request rule was applied. Every change since goes through a pull request.
+- 0.1.0 has no updater and no `.sig` file: the in-app updater begins with the release after it, so 0.1.0 users download that one by hand.

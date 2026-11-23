@@ -20,19 +20,29 @@ jobs:
       - run: scripts/build-app.sh
       - name: Zip the app
         run: cd build && ditto -c -k --keepParent FloatPiP.app "FloatPiP-${GITHUB_REF_NAME}.zip" && shasum -a 256 "FloatPiP-${GITHUB_REF_NAME}.zip" > SHA256SUMS.txt
+      - name: Sign the update for the in-app updater
+        env:
+          UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
+        run: |
+          if [ -z "$UPDATE_SIGNING_KEY" ]; then
+            echo "::warning::UPDATE_SIGNING_KEY is not set, so the in-app updater will refuse this release"
+          else
+            swift scripts/sign-update.swift "build/FloatPiP-${GITHUB_REF_NAME}.zip"
+          fi
       - name: Release notes from CHANGELOG.md
         run: |
           v="${GITHUB_REF_NAME#v}"
           awk -v h="## [$v] " 'index($0, h) == 1 {on=1; next} /^## / || /^\[[^]]+\]: / {on=0} on' CHANGELOG.md > build/notes.md
           grep -q '^- ' build/notes.md || { echo "::error::CHANGELOG.md has no notes for $v"; exit 1; }
           echo "" >> build/notes.md
-          echo "**Downloads:** \`FloatPiP-${GITHUB_REF_NAME}.zip\` is the app (ad-hoc signed, not notarized: see the README's Quick start); \`SHA256SUMS.txt\` is its checksum. All changes: [CHANGELOG.md](https://github.com/${GITHUB_REPOSITORY}/blob/main/CHANGELOG.md)." >> build/notes.md
+          echo "**Downloads:** \`FloatPiP-${GITHUB_REF_NAME}.zip\` is the app (ad-hoc signed, not notarized: see the README's Quick start); \`.sig\` is its signature, which the in-app updater checks; \`SHA256SUMS.txt\` is its checksum. All changes: [CHANGELOG.md](https://github.com/${GITHUB_REPOSITORY}/blob/main/CHANGELOG.md)." >> build/notes.md
           echo "TITLE=FloatPiP $v" >> "$GITHUB_ENV"
           cat build/notes.md
       - uses: softprops/action-gh-release@v3
         with:
           files: |
             build/FloatPiP-${{ github.ref_name }}.zip
+            build/FloatPiP-${{ github.ref_name }}.zip.sig
             build/SHA256SUMS.txt
           name: ${{ env.TITLE }}
           body_path: build/notes.md

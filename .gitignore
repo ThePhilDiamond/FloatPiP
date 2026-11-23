@@ -4,3 +4,5 @@ build/
 # Working notes kept on this Mac only: they describe the owner's own use and other projects
 STAGE-MAP.md
 notes/
+# The update-signing private key: never committed (see docs/UPDATES.md)
+.secrets/
