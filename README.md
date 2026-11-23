@@ -24,11 +24,10 @@ macOS 26 or later, on a Mac with Apple silicon.
 
 1. Download `WindowRaft-vX.Y.Z.zip` from the [Releases page](../../releases), open it, and drag Window Raft to your Applications folder. (To build it yourself instead, see [BUILDING.md](BUILDING.md).)
 2. Open Window Raft. Because it isn't notarized by Apple yet, macOS may ask you to confirm the first time: choose **Open**, or go to System Settings ▸ Privacy & Security and choose **Open Anyway**.
-3. macOS's window picker appears: click the window you want to float, then click **Share Window**. That is macOS's own wording, which Window Raft can't change; a note at the top of the screen says so. Nothing is shared: the window only floats on your screen.
+3. Click Window Raft's icon in the menu bar (a small picture afloat on rippling water; there is no Dock icon) and choose **Pick a Window…**.
+4. macOS's window picker appears: click the window you want to float, then click **Share Window**. That is macOS's own wording, which Window Raft can't change; a note at the top of the screen says so. Nothing is shared: the window only floats on your screen.
 
-Window Raft's icon, a small picture afloat on rippling water, appears in the menu bar, not the Dock.
-
-If you can't see the icon, macOS may be hiding it: on a Mac with a camera notch, a full menu bar hides the icons that don't fit. Open Window Raft again from Finder or Spotlight to get the window picker (or, while a window is floating, the menu), or right-click the floating picture for the same menu. To bring the icon back, make room by turning off other icons in System Settings ▸ Menu Bar.
+If you can't see the icon, macOS may be hiding it: on a Mac with a camera notch, a full menu bar hides the icons that don't fit. Open Window Raft again from Finder or Spotlight to show its menu under the pointer, or right-click the floating picture for the same menu. To bring the icon back, make room by turning off other icons in System Settings ▸ Menu Bar.
 
 ## Options
 
