@@ -495,6 +495,15 @@ struct CornerStyle {
     var knockMargin: CGFloat = 0.6                          // with submerge: how far past the outer ring the frame is hidden, in frame lines
     var haloFollowsBreaks = true                            // the water gap traces the broken pieces (false: the whole ripples, smooth)
     var noFrame = false                                     // leave out the outer window: the small picture and its ripples alone
+    var raft = ""                                           // round 16: "logs", "lashed", "logends", "paddle" (empty: the plain picture)
+}
+
+/// Fills `path` with the tile's water, so a mark reads as a gap cut through white.
+func waterFill(_ s: CGFloat, _ path: NSBezierPath) {
+    NSGraphicsContext.saveGraphicsState()
+    path.addClip()
+    NSGradient(colors: [color(0x37B6E9), color(0x1769D1)])!.draw(in: NSRect(x: 0, y: 0, width: s, height: s), angle: -90)
+    NSGraphicsContext.restoreGraphicsState()
 }
 
 /// The near side of one ring as crescent pieces: the outer edge on the ring's ellipse,
@@ -610,8 +619,63 @@ func levelCornerStyled(_ s: CGFloat, _ st: CornerStyle) {
         tr.concat()
         // the picture runs on below the water, so the arc alone shapes its visible bottom
         let r = NSRect(x: pc.x - w / 2, y: pc.y - h / 2 - s * 0.08, width: w, height: h + s * 0.08)
-        white.setFill(); NSBezierPath(roundedRect: r, xRadius: h * 0.16, yRadius: h * 0.16).fill()
+        // the water level in the picture's own (tilted) frame, for marks that sit on it
+        let water = pc.y - h / 2 + h * st.submerged + s * st.lift
+        if st.raft.hasPrefix("logends") {
+            // the picture stands on a row of log ends, as a sail on a raft
+            let n = st.raft == "logends4" ? 4 : 5, span = w * (st.raft == "logends4" ? 1.12 : 1.22), d = span / CGFloat(n), logY = water + d * 0.12
+            let top = NSRect(x: pc.x - w / 2, y: logY + d / 2 + s * 0.016, width: w, height: pc.y + h / 2 - (logY + d / 2 + s * 0.016))
+            white.setFill(); NSBezierPath(roundedRect: top, xRadius: h * 0.16, yRadius: h * 0.16).fill()
+            let gap = s * 0.010
+            for i in 0..<n {
+                let cx = pc.x - span / 2 + d * (CGFloat(i) + 0.5)
+                white.setFill(); NSBezierPath(ovalIn: NSRect(x: cx - d / 2 + gap / 2, y: logY - d / 2, width: d - gap, height: d)).fill()
+                let core = d * 0.30
+                waterFill(s, NSBezierPath(ovalIn: NSRect(x: cx - core / 2, y: logY - core / 2, width: core, height: core)))
+            }
+        } else {
+            white.setFill(); NSBezierPath(roundedRect: r, xRadius: h * 0.16, yRadius: h * 0.16).fill()
+        }
+        if st.raft == "logs" || st.raft == "lashed" || st.raft.hasPrefix("logspaddle") {
+            // the picture as logs side by side: three seams of water between four logs
+            let seam = s * 0.013
+            for k in 1...3 {
+                let x = r.minX + w * CGFloat(k) / 4
+                waterFill(s, NSBezierPath(rect: NSRect(x: x - seam / 2, y: r.minY, width: seam, height: r.height)))
+            }
+            if st.raft == "lashed" {
+                // a rope across them: a white band between two thin lines of water
+                let y = pc.y + h * 0.12, band = s * 0.030, line = s * 0.010
+                waterFill(s, NSBezierPath(rect: NSRect(x: r.minX, y: y + band / 2, width: w, height: line)))
+                waterFill(s, NSBezierPath(rect: NSRect(x: r.minX, y: y - band / 2 - line, width: w, height: line)))
+                white.setFill(); NSRect(x: r.minX, y: y - band / 2, width: w, height: band).fill()
+            }
+        }
         NSGraphicsContext.restoreGraphicsState()
+        if st.raft.hasSuffix("paddle") || st.raft.hasSuffix("paddle2") {
+            // a paddle across the picture's left side, its blade dipping into the water
+            let bold = st.raft.hasSuffix("paddle2")
+            let grip = NSPoint(x: pc.x - w * (bold ? 0.10 : 0.18), y: pc.y + h * (bold ? 0.92 : 0.78))
+            let tip = NSPoint(x: pc.x - w * (bold ? 0.86 : 0.80), y: waterline - s * 0.012)
+            let dx = tip.x - grip.x, dy = tip.y - grip.y, len = sqrt(dx * dx + dy * dy)
+            let shaft = NSBezierPath(); shaft.move(to: grip); shaft.line(to: NSPoint(x: grip.x + dx * 0.72, y: grip.y + dy * 0.72))
+            shaft.lineCapStyle = .round
+            let bladeC = NSPoint(x: grip.x + dx * 0.86, y: grip.y + dy * 0.86)
+            let bw: CGFloat = bold ? 0.040 : 0.032
+            let blade = NSBezierPath(ovalIn: NSRect(x: -len * 0.17, y: -s * bw, width: len * 0.34, height: s * bw * 2))
+            let bt = NSAffineTransform(); bt.translateX(by: bladeC.x, yBy: bladeC.y); bt.rotate(byRadians: atan2(dy, dx))
+            let bladePath = bt.transform(blade)
+            NSGraphicsContext.saveGraphicsState()
+            NSBezierPath(rect: NSRect(x: 0, y: waterline - s * 0.006, width: s, height: s)).addClip()
+            // a gap of water where the shaft crosses the picture, then the paddle in white
+            shaft.lineWidth = s * 0.042
+            waterFill(s, NSBezierPath(cgPath: shaft.cgPath.copy(strokingWithWidth: s * 0.044, lineCap: .round, lineJoin: .round, miterLimit: 4)))
+            waterFill(s, NSBezierPath(cgPath: bladePath.cgPath.copy(strokingWithWidth: s * 0.022, lineCap: .round, lineJoin: .round, miterLimit: 4)))
+            shaft.lineWidth = s * (bold ? 0.026 : 0.020)
+            white.setStroke(); shaft.stroke()
+            white.setFill(); bladePath.fill()
+            NSGraphicsContext.restoreGraphicsState()
+        }
     }
     if st.spill && st.cutFrame {
         back2.lineWidth = back.lineWidth
@@ -812,6 +876,15 @@ outerRight.taperBreaks = [[(CGFloat.pi * 1.61, CGFloat.pi * 1.66)], [(CGFloat.pi
 var outerBoth = wrap3
 outerBoth.taperBreaks = [[(CGFloat.pi * 1.61, CGFloat.pi * 1.66)], [(CGFloat.pi * 1.37, CGFloat.pi * 1.41), (CGFloat.pi * 1.82, CGFloat.pi * 1.86)]]
 // The menu bar version: the same drawing with bolder lines and wider breaks, so it holds at 18 points
+// MARK: Round 16 (Phil: more like a raft, keeping the ripples and the floating window)
+var raftLogs = outerBoth; raftLogs.raft = "logs"
+var raftLashed = outerBoth; raftLashed.raft = "lashed"
+var raftLogEnds = outerBoth; raftLogEnds.raft = "logends"
+var raftPaddle = outerBoth; raftPaddle.raft = "paddle"
+var raftPaddle2 = outerBoth; raftPaddle2.raft = "paddle2"
+var raftLogEnds4 = outerBoth; raftLogEnds4.raft = "logends4"
+var raftLogsPaddle = outerBoth; raftLogsPaddle.raft = "logspaddle2"
+
 var menuBold = outerBoth
 menuBold.line = 0.055
 menuBold.rings = [(0.36, 0.11, 0.042), (0.56, 0.165, 0.036)]
@@ -1069,7 +1142,11 @@ let options: [(String, (CGFloat) -> Void)] = [
     ("broken3", { levelCornerStyled($0, broken3) }), ("broken4", { levelCornerStyled($0, broken4) }),
     ("wrap3", { levelCornerStyled($0, wrap3) }), ("wrap4", { levelCornerStyled($0, wrap4) }),
     ("outerleft", { levelCornerStyled($0, outerLeft) }), ("outerright", { levelCornerStyled($0, outerRight) }),
-    ("outerboth", { levelCornerStyled($0, outerBoth) }), ("menubold", { levelCornerStyled($0, menuBold) }),
+    ("outerboth", { levelCornerStyled($0, outerBoth) }),
+    ("raftlogs", { levelCornerStyled($0, raftLogs) }), ("raftlashed", { levelCornerStyled($0, raftLashed) }),
+    ("raftlogends", { levelCornerStyled($0, raftLogEnds) }), ("raftpaddle", { levelCornerStyled($0, raftPaddle) }),
+    ("raftpaddle2", { levelCornerStyled($0, raftPaddle2) }), ("raftlogends4", { levelCornerStyled($0, raftLogEnds4) }),
+    ("raftlogspaddle", { levelCornerStyled($0, raftLogsPaddle) }), ("menubold", { levelCornerStyled($0, menuBold) }),
     ("menumid", { levelCornerStyled($0, menuMid) }),
     ("menubob", { levelCornerStyled($0, menuBob) }), ("menubobmid", { levelCornerStyled($0, menuBobMid) }),
     ("menuglyph", { levelCornerStyled($0, menuGlyph) }), ("menuglyph2", { levelCornerStyled($0, menuGlyph2) }),
