@@ -1,5 +1,5 @@
 #!/bin/bash
-# Applies FloatPiP's GitHub settings from this repository, so they are reviewable and repeatable.
+# Applies Window Raft's GitHub settings from this repository, so they are reviewable and repeatable.
 # Safe to run again. Needs the GitHub CLI (gh), signed in as a repository admin.
 #
 # - Always: description, topics, merge settings (squash only, delete merged branches).
@@ -7,10 +7,10 @@
 #   the "Protect main" ruleset (.github/rulesets/protect-main.json), private vulnerability reporting
 #   (SECURITY.md relies on it), Dependabot alerts and security updates, secret scanning and push protection.
 set -euo pipefail
-REPO=ThePhilDiamond/FloatPiP
+REPO=ThePhilDiamond/WindowRaft
 
 gh api -X PATCH "repos/$REPO" --silent \
-  -f description="Watch one window in a small floating picture while you share your screen, without the people watching your share seeing it. A free, open-source macOS menu bar app. Nothing saved, nothing online." \
+  -f description="Watch one window in a small floating picture while you share your screen, without the people watching your share seeing it. A free, open-source macOS menu bar app. Nothing saved; online only to check for updates." \
   -f homepage="https://github.com/ThePhilDiamond" \
   -F allow_squash_merge=true -F allow_merge_commit=false -F allow_rebase_merge=false \
   -F delete_branch_on_merge=true -F allow_auto_merge=false \

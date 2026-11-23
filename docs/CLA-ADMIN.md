@@ -4,7 +4,7 @@ These notes are for the maintainer, who doesn't sign: the agreement licenses con
 
 ## What gets recorded
 
-The [CLA workflow](../.github/workflows/cla.yml) runs on every pull request. A contributor signs by posting the sentence for the current version (for version 1.0: "I have read FloatPiP CLA version 1.0 and I hereby sign it"). The action stores their GitHub account name and number, the pull request, and the time in `signatures/cla-<version>.json` (`signatures/cla-1.0.json` for version 1.0) on the `cla-signatures` branch.
+The [CLA workflow](../.github/workflows/cla.yml) runs on every pull request. A contributor signs by posting the sentence for the current version (for version 1.0: "I have read Window Raft CLA version 1.0 and I hereby sign it"). The action stores their GitHub account name and number, the pull request, and the time in `signatures/cla-<version>.json` (`signatures/cla-1.0.json` for version 1.0) on the `cla-signatures` branch.
 
 The action doesn't store the agreement's text, so the version in the sentence is what links a signature to the text that was signed. After a new version merges, tag the merge commit `cla-<version>` (for version 1.0, `cla-1.0`) so that text is easy to find.
 

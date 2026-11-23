@@ -1,4 +1,4 @@
-# Building FloatPiP
+# Building Window Raft
 
 You need macOS 26 or later on Apple silicon, and the Xcode Command Line Tools. Xcode itself is not needed. To install the tools, open Terminal (it's in Applications ▸ Utilities) and run:
 
@@ -8,13 +8,13 @@ xcode-select --install
 
 ## The app
 
-From the folder you downloaded or cloned FloatPiP into:
+From the folder you downloaded or cloned Window Raft into:
 
 ```bash
 scripts/build-app.sh
 ```
 
-This builds `build/FloatPiP.app`, ad-hoc signed, with its icon. Open it from Finder; it appears in the menu bar, not the Dock. Because the build is not notarized by Apple, macOS may ask you to confirm the first time you open it.
+This builds `build/Window Raft.app`, ad-hoc signed, with its icon. Open it from Finder; it appears in the menu bar, not the Dock. Because the build is not notarized by Apple, macOS may ask you to confirm the first time you open it.
 
 ## The selftest
 
@@ -23,7 +23,7 @@ swift build -c release
 ```
 
 ```bash
-.build/release/FloatPiP --selftest
+.build/release/WindowRaft --selftest
 ```
 
 The selftest checks the floating picture's layout (corners, sizes, shapes, margins, shadows, and capture size) and the remembered options, without opening a window or capturing anything. CI runs it on every pull request.
@@ -64,10 +64,10 @@ cp build/icon/MenuIcon.png build/icon/MenuIcon@2x.png Resources/
 
 ## Layout
 
-- `Sources/FloatPiP/main.swift`: the menu bar item, its menu, and the glue between the picture and the capture.
-- `Sources/FloatPiP/Capture.swift`: macOS's window picker and the live capture of the chosen window (ScreenCaptureKit).
-- `Sources/FloatPiP/PiPPanel.swift`: the floating window, its shape, shadows, and hairline, and dragging.
-- `Sources/FloatPiP/Layout.swift`: where the picture goes and how big it is.
-- `Sources/FloatPiP/Settings.swift`: the remembered options.
-- `Sources/FloatPiP/Selftest.swift`: `--selftest`.
+- `Sources/WindowRaft/main.swift`: the menu bar item, its menu, and the glue between the picture and the capture.
+- `Sources/WindowRaft/Capture.swift`: macOS's window picker and the live capture of the chosen window (ScreenCaptureKit).
+- `Sources/WindowRaft/PiPPanel.swift`: the floating window, its shape, shadows, and hairline, and dragging.
+- `Sources/WindowRaft/Layout.swift`: where the picture goes and how big it is.
+- `Sources/WindowRaft/Settings.swift`: the remembered options.
+- `Sources/WindowRaft/Selftest.swift`: `--selftest`.
 - `Info.plist`: the app's bundle information; its version is `VERSION`'s.

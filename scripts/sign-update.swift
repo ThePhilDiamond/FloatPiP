@@ -1,4 +1,4 @@
-// Signs a release zip with the update key, for FloatPiP's in-app updater.
+// Signs a release zip with the update key, for Window Raft's in-app updater.
 // Usage: UPDATE_SIGNING_KEY=<base64 private key> swift scripts/sign-update.swift <zip>   (writes <zip>.sig)
 import CryptoKit
 import Foundation

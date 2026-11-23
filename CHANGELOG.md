@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to FloatPiP are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) as [RELEASING.md](RELEASING.md) describes. Changes waiting for the next release are in [changes/](changes/README.md).
+All notable changes to Window Raft (called FloatPiP until 0.2.0) are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) as [RELEASING.md](RELEASING.md) describes. Changes waiting for the next release are in [changes/](changes/README.md).
 
 ## [Unreleased]
 
@@ -14,5 +14,5 @@ All notable changes to FloatPiP are listed here. The format follows [Keep a Chan
 - Drag the picture to move it; it snaps to the nearest corner. FloatPiP remembers your choices.
 - The picture floats the way macOS and calling apps show floating video: two soft shadows and a faint hairline, with no border.
 
-[Unreleased]: https://github.com/ThePhilDiamond/FloatPiP/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/ThePhilDiamond/FloatPiP/releases/tag/v0.1.0
+[Unreleased]: https://github.com/ThePhilDiamond/WindowRaft/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/ThePhilDiamond/WindowRaft/releases/tag/v0.1.0

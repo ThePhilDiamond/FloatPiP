@@ -1,7 +1,7 @@
-// Makes the Ed25519 key pair that signs FloatPiP's updates.
+// Makes the Ed25519 key pair that signs Window Raft's updates.
 // Usage: swift scripts/update-key.swift <folder>   (writes update-signing-key.txt there; prints the public key)
 // The private key goes into the GitHub secret UPDATE_SIGNING_KEY and a password manager; the public key goes into
-// Sources/FloatPiP/Updater.swift. Run once: a new key means older versions can't verify newer updates.
+// Sources/WindowRaft/Updater.swift. Run once: a new key means older versions can't verify newer updates.
 import CryptoKit
 import Foundation
 

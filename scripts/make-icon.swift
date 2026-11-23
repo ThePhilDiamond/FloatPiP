@@ -1,4 +1,4 @@
-// Draws FloatPiP's logo options as PNGs, and the app icon set.
+// Draws Window Raft's logo options as PNGs, and the app icon set.
 // Usage: swift scripts/make-icon.swift <output folder> [sheet [name,name,...]|app|menu [name [max width in points]]]
 // The chosen icon is "outerboth" (round 15); every option drawn on the way is kept, so any can be redrawn.
 //   sheet: every option (or those named) side by side, large and at 32 pixels (sheet.png)
@@ -37,7 +37,7 @@ func drawRipples(_ s: CGFloat, cx: CGFloat, cy: CGFloat, widths: [CGFloat], alph
     }
 }
 
-/// The floating effect FloatPiP's panel uses: an ambient and a contact shadow.
+/// The floating effect Window Raft's panel uses: an ambient and a contact shadow.
 func withFloat(_ s: CGFloat, height h: CGFloat, _ draw: () -> Void) {
     NSGraphicsContext.saveGraphicsState()
     let ambient = NSShadow()

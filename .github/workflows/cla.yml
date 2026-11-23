@@ -22,16 +22,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: CLA Assistant
-        if: (github.event.comment.body == 'recheck' || github.event.comment.body == 'I have read FloatPiP CLA version 1.0 and I hereby sign it') || github.event_name == 'pull_request_target'
+        if: (github.event.comment.body == 'recheck' || github.event.comment.body == 'I have read Window Raft CLA version 1.0 and I hereby sign it') || github.event_name == 'pull_request_target'
         uses: contributor-assistant/github-action@v2.6.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           path-to-signatures: 'signatures/cla-1.0.json'
-          path-to-document: 'https://github.com/ThePhilDiamond/FloatPiP/blob/main/CLA.md'
+          path-to-document: 'https://github.com/ThePhilDiamond/WindowRaft/blob/main/CLA.md'
           branch: 'cla-signatures'
-          custom-pr-sign-comment: 'I have read FloatPiP CLA version 1.0 and I hereby sign it'
-          custom-notsigned-prcomment: 'Thank you for your pull request. Before it can be merged, $you need to sign the [FloatPiP Contributor License Agreement](https://github.com/ThePhilDiamond/FloatPiP/blob/main/CLA.md), version 1.0, once: everyone whose work is in it signs for themselves. You keep your copyright. To sign, post a comment with exactly this sentence:'
+          custom-pr-sign-comment: 'I have read Window Raft CLA version 1.0 and I hereby sign it'
+          custom-notsigned-prcomment: 'Thank you for your pull request. Before it can be merged, $you need to sign the [Window Raft Contributor License Agreement](https://github.com/ThePhilDiamond/WindowRaft/blob/main/CLA.md), version 1.0, once: everyone whose work is in it signs for themselves. You keep your copyright. To sign, post a comment with exactly this sentence:'
           # The action names a commit's author by their account, or, when the author has none (a bot such as
           # Dependabot isn't a user account), by the account that committed it: web-flow, GitHub's own committer for
           # commits made on its website and API. People with an account are always named by their own. Bots are named

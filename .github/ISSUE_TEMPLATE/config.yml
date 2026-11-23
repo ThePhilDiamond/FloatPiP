@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
   - name: Security problem
-    url: https://github.com/ThePhilDiamond/FloatPiP/security/advisories/new
+    url: https://github.com/ThePhilDiamond/WindowRaft/security/advisories/new
     about: Report it privately, not as an issue.
   - name: Commercial license
-    url: https://github.com/ThePhilDiamond/FloatPiP/blob/main/COMMERCIAL.md
-    about: Using FloatPiP in a closed-source product, or another licensing question.
+    url: https://github.com/ThePhilDiamond/WindowRaft/blob/main/COMMERCIAL.md
+    about: Using Window Raft in a closed-source product, or another licensing question.

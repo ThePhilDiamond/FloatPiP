@@ -1,6 +1,6 @@
 # Is the floating picture left out of screen sharing?
 
-FloatPiP's window has `sharingType = .none`, which asks macOS to leave it out of screen captures. This records the test of whether macOS does.
+Window Raft's window has `sharingType = .none`, which asks macOS to leave it out of screen captures. This records the test of whether macOS does.
 
 ## The test
 
@@ -25,4 +25,4 @@ One run.
 - Each video-calling app's own way of sharing the screen. Apps built on older capture methods, or on their own drivers, may differ. Check with the person watching the first time you use one.
 - Other macOS versions.
 
-If a capture ever includes FloatPiP, an app can leave it out by its bundle ID, `io.github.thephildiamond.FloatPiP`.
+If a capture ever includes Window Raft, an app can leave it out by its bundle ID, `io.github.thephildiamond.FloatPiP`.

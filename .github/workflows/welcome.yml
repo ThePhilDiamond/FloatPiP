@@ -39,5 +39,5 @@ jobs:
             if (earlier.length > 0) return core.info(`${author} has ${earlier.length} earlier ${isPR ? 'pull requests' : 'issues'}: no welcome`)
             const body = isPR
               ? "Thanks for your first pull request. The selftest runs on it automatically; please say in the description how you tried the change in the built app."
-              : "Thanks for your first report. The FloatPiP and macOS versions, and the reason the menu shows if the picture closed by itself, help most. Please check it for anything private first."
+              : "Thanks for your first report. The Window Raft and macOS versions, and the reason the menu shows if the picture closed by itself, help most. Please check it for anything private first."
             await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: item.number, body })
