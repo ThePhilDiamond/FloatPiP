@@ -1,0 +1,1 @@
+- The Corner menu is now Position (Snap to Corners or Stay Where Dropped); you choose a corner by dragging the picture to it.

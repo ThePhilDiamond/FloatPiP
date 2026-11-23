@@ -68,6 +68,24 @@ enum Selftest {
         let cpxTall = c.capturePixels(scale: 2, aspect: 0.5, shape: .circle)
         check(cpxTall.width == c.content.width * 2 && cpxTall.height == cpxTall.width * 2, "a tall window's circle captures at the circle's width, got \(cpxTall)")
 
+        // Free placement: the picture goes where it was dropped, kept wholly on screen.
+        let free = Layout.make(screenFrame: screen, visibleFrame: visible, aspect: 16.0 / 9.0, sizePercent: 30, shape: .rounded,
+                               corner: .bottomRight, freeCenter: NSPoint(x: 600, y: 500))
+        check(near(free.content.midX, 600, 1) && near(free.content.midY, 500, 1), "free placement centers the picture where dropped, got \(free.content)")
+        let pushed = Layout.make(screenFrame: screen, visibleFrame: visible, aspect: 16.0 / 9.0, sizePercent: 30, shape: .rounded,
+                                 corner: .bottomRight, freeCenter: NSPoint(x: 1460, y: 950))
+        check(pushed.content.maxX == 1470 && pushed.content.maxY == 923, "a drop past the top-right keeps the picture on screen, below the menu bar, got \(pushed.content)")
+        let low = Layout.make(screenFrame: screen, visibleFrame: visible, aspect: 16.0 / 9.0, sizePercent: 30, shape: .rounded,
+                              corner: .topLeft, freeCenter: NSPoint(x: -50, y: -50))
+        check(low.content.minX == 0 && low.content.minY == 0, "a drop past the bottom-left keeps the picture on screen, got \(low.content)")
+
+        // Zoom: the center 1/zoom of the picture, captured that much larger.
+        check(Layout.zoomRect(1) == CGRect(x: 0, y: 0, width: 1, height: 1), "100% shows the whole window")
+        check(Layout.zoomRect(2) == CGRect(x: 0.25, y: 0.25, width: 0.5, height: 0.5), "200% shows the center half each way, got \(Layout.zoomRect(2))")
+        check(near(Layout.zoomRect(4).width, 0.25, 0.0001) && near(Layout.zoomRect(4).midX, 0.5, 0.0001), "400% shows the center quarter each way")
+        let zpx = d.capturePixels(scale: 2, aspect: 16.0 / 9.0, shape: .rounded, zoom: 2)
+        check(zpx == CGSize(width: 2040, height: 1148), "at 200% the window is captured twice as large, got \(zpx)")
+
         // Remembered options, in a scratch defaults domain.
         let suite = "io.github.thephildiamond.FloatPiP.selftest"
         let scratch = UserDefaults(suiteName: suite)!
@@ -77,8 +95,14 @@ enum Selftest {
         s.sizePercent = 5; check(s.sizePercent == 10, "size is at least 10%")
         s.sizePercent = 95; check(s.sizePercent == 90, "size is at most 90%")
         s.corner = .topLeft; s.shape = .circle; s.screenID = 7
+        check(s.placement == .corners && s.freeCenter == nil && s.zoomPercent == 100, "defaults: snap to corners, no free position, 100% zoom")
+        check(s.hideFromSharing, "by default the picture is hidden from screen sharing")
+        s.zoomPercent = 50; check(s.zoomPercent == 100, "zoom is at least 100%")
+        s.zoomPercent = 900; check(s.zoomPercent == 400, "zoom is at most 400%")
+        s.zoomPercent = 170; s.placement = .free; s.freeCenter = NSPoint(x: 321, y: 654)
         let again = Settings(defaults: scratch)
         check(again.corner == .topLeft && again.shape == .circle && again.screenID == 7, "options are remembered")
+        check(again.zoomPercent == 170 && again.placement == .free && again.freeCenter == NSPoint(x: 321, y: 654), "zoom and free position are remembered")
         scratch.removePersistentDomain(forName: suite)
 
         if failures.isEmpty {
