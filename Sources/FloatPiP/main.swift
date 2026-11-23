@@ -10,8 +10,16 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
     private var lastStop: String?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        statusItem.button?.image = NSImage(systemSymbolName: "pip", accessibilityDescription: "FloatPiP")
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        // FloatPiP's own mark, drawn by scripts/make-icon.swift as a template so macOS colors it for
+        // light and dark menu bars; the system's picture-in-picture symbol if it is missing
+        if let mark = Bundle.main.image(forResource: "MenuIcon") {
+            mark.isTemplate = true
+            mark.accessibilityDescription = "FloatPiP"
+            statusItem.button?.image = mark
+        } else {
+            statusItem.button?.image = NSImage(systemSymbolName: "pip", accessibilityDescription: "FloatPiP")
+        }
         let menu = NSMenu()
         menu.delegate = self
         statusItem.menu = menu
