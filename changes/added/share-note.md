@@ -1,1 +1,0 @@
-- A small note on the floating picture says whether people watching your screen share can see it, and the new Hide from Screen Sharing setting in the menu turns the hiding off and on.

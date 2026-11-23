@@ -1,1 +1,0 @@
-- FloatPiP is now called Window Raft. The app, its downloads, and its GitHub page use the new name, and your settings carry over. Delete the old FloatPiP app after you install Window Raft.

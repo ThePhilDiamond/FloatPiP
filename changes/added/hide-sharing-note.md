@@ -1,1 +1,0 @@
-- Show Sharing Note on Picture, in the menu, turns the note about screen sharing off for anyone who finds it distracting; the note now says it can be hidden.

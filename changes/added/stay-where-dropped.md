@@ -1,1 +1,0 @@
-- Stay Where Dropped: the picture can now stay wherever you drag it, instead of snapping to a corner.

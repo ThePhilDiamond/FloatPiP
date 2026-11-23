@@ -1,1 +1,0 @@
-- While macOS's window picker is open, a note at the top of the screen explains that its Share Window button floats the window and shares nothing.
