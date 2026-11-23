@@ -1,1 +1,0 @@
-- Window Raft's icon and menu bar icon now have an oar beside the floating picture, its blade dipping into the ripples, so they show a raft as well as a window.
