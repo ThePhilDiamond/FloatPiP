@@ -49,7 +49,7 @@ Write for someone who has never opened Terminal. Every step names where it happe
 - **Small.** FloatPiP does one thing: float one window, out of the screen share. A feature earns its place by serving that.
 - **Out of the share, always.** Nothing FloatPiP draws on screen may appear in a screen capture. Every window it opens has `sharingType = .none`.
 - **Only what the person picked.** FloatPiP captures only the window chosen in macOS's picker, never asks for the Screen Recording permission, and saves nothing.
-- **Everything stays on the Mac.** No network calls, no analytics.
+- **Everything stays on the Mac.** No analytics. The one network use is the update check against GitHub ([docs/UPDATES.md](docs/UPDATES.md)), which can be turned off.
 - **Light on the Mac.** Capture at the picture's own size, at most 30 frames a second, and nothing while it is hidden. Check it in Activity Monitor.
 - **The same look as macOS's floating video.** The shadows, hairline, margins, and radii in the README's "How it looks" are the design; change them only on purpose.
 - **License-clean dependencies.** MIT, BSD, Apache-2.0, and similar only. No GPL, AGPL, or LGPL code linked into what ships, because it would stop FloatPiP from being offered under a commercial license. The project has no dependencies today. Anything taken from another project, even an approach, is credited in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) with its license.

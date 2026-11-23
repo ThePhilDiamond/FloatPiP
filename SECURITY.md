@@ -15,8 +15,8 @@ The latest release. Fixes go into a new release rather than older ones.
 - **One window, chosen by you.** FloatPiP shows macOS's own window picker (ScreenCaptureKit's `SCContentSharingPicker`) and captures only the window picked there, only while its floating picture is showing. macOS shows its screen-sharing icon in the menu bar the whole time, and stopping from there stops FloatPiP.
 - **No Screen Recording permission.** Because the window is chosen in macOS's picker, FloatPiP never asks for the permission that would let it capture the screen or other windows by itself.
 - **Window list, without contents.** Once a second FloatPiP reads macOS's window list for the chosen window's number, size, and whether it still exists (`CGWindowListCopyWindowInfo`), to follow a resize and to stop when it closes. Without the Screen Recording permission, macOS gives no window titles or contents this way.
-- **Nothing saved.** Captured pictures go straight to the screen and are discarded. The only things written to disk are the options (corner, size, shape, and screen) in FloatPiP's own preferences.
-- **No network.** FloatPiP makes no network connections at all.
+- **Nothing saved.** Captured pictures go straight to the screen and are discarded. The only things written to disk are FloatPiP's options in its own preferences.
+- **Network: update checks only.** FloatPiP asks GitHub's public API for the latest release a minute after opening and then once a day (Check for Updates Automatically, in its menu, turns that off), and downloads an update only when you choose Install. It installs one only if the release's Ed25519 signature matches the key built into the app ([docs/UPDATES.md](docs/UPDATES.md)). Nothing about you or the window you float is sent.
 - **No administrator password**, and no helper tools, background services, or login items.
 
 ## The floating picture and screen sharing

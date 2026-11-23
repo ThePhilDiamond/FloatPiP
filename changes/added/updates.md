@@ -1,0 +1,1 @@
+- FloatPiP can update itself: it checks GitHub once a day (or when you choose Check for Updates…), and installs a new version only when you choose to and only if its signature checks out. Check for Updates Automatically, in the menu, turns the daily check off.
