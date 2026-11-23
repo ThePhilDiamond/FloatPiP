@@ -24,7 +24,7 @@ macOS 26 or later, on a Mac with Apple silicon.
 2. Open FloatPiP. Because it isn't notarized by Apple yet, macOS may ask you to confirm the first time: choose **Open**, or go to System Settings ▸ Privacy & Security and choose **Open Anyway**.
 3. macOS's window picker appears: click the window you want to float.
 
-FloatPiP's icon, a small picture in a corner, appears in the menu bar, not the Dock.
+FloatPiP's icon, a window with a small picture afloat in it, appears in the menu bar, not the Dock.
 
 ## Options
 

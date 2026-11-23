@@ -1,8 +1,9 @@
 // Draws FloatPiP's logo options as PNGs, and the app icon set.
-// Usage: swift scripts/make-icon.swift <output folder> [sheet [name,name,...]|app]
+// Usage: swift scripts/make-icon.swift <output folder> [sheet [name,name,...]|app|menu [name]]
 // The chosen icon is "outerboth" (round 15); every option drawn on the way is kept, so any can be redrawn.
 //   sheet: every option (or those named) side by side, large and at 32 pixels (sheet.png)
 //   app:   the chosen logo (logo.png) and AppIcon.iconset, for iconutil
+//   menu:  the menu bar icon (MenuIcon.png and MenuIcon@2x.png), from the chosen drawing or the one named
 import AppKit
 
 let args = CommandLine.arguments
@@ -809,6 +810,26 @@ var outerRight = wrap3
 outerRight.taperBreaks = [[(CGFloat.pi * 1.61, CGFloat.pi * 1.66)], [(CGFloat.pi * 1.80, CGFloat.pi * 1.84)]]
 var outerBoth = wrap3
 outerBoth.taperBreaks = [[(CGFloat.pi * 1.61, CGFloat.pi * 1.66)], [(CGFloat.pi * 1.37, CGFloat.pi * 1.41), (CGFloat.pi * 1.82, CGFloat.pi * 1.86)]]
+// The menu bar version: the same drawing with bolder lines and wider breaks, so it holds at 18 points
+var menuBold = outerBoth
+menuBold.line = 0.055
+menuBold.rings = [(0.36, 0.11, 0.042), (0.56, 0.165, 0.036)]
+menuBold.taperBreaks = [[(CGFloat.pi * 1.60, CGFloat.pi * 1.67)], [(CGFloat.pi * 1.36, CGFloat.pi * 1.42), (CGFloat.pi * 1.81, CGFloat.pi * 1.87)]]
+// A dedicated menu bar glyph: the same picture with a heavier frame, two bolder ripples set
+// further apart, and wider breaks, so each stroke is at least about 2 pixels at 36 pixels high
+var menuGlyph = outerBoth
+menuGlyph.line = 0.07
+menuGlyph.rings = [(0.40, 0.13, 0.055), (0.66, 0.22, 0.050)]
+menuGlyph.halo = 1.0
+menuGlyph.taperBreaks = [[(CGFloat.pi * 1.58, CGFloat.pi * 1.68)], [(CGFloat.pi * 1.34, CGFloat.pi * 1.42), (CGFloat.pi * 1.80, CGFloat.pi * 1.88)]]
+menuGlyph.offset = (0.085, -0.095); menuGlyph.pic = (0.22, 0.17)
+var menuGlyph2 = menuGlyph
+menuGlyph2.taperBreaks = [[(CGFloat.pi * 1.58, CGFloat.pi * 1.68)], [(CGFloat.pi * 1.80, CGFloat.pi * 1.88)]]
+// In between: the design exactly, with its strokes a third heavier and its breaks a little wider
+var menuMid = outerBoth
+menuMid.line = 0.047
+menuMid.rings = [(0.36, 0.11, 0.037), (0.56, 0.165, 0.032)]
+menuMid.taperBreaks = [[(CGFloat.pi * 1.60, CGFloat.pi * 1.67)], [(CGFloat.pi * 1.36, CGFloat.pi * 1.415), (CGFloat.pi * 1.815, CGFloat.pi * 1.87)]]
 var curveCut = curveDeep
 curveCut.knockRing = 0
 var standCorner = dipClearWide
@@ -1042,7 +1063,9 @@ let options: [(String, (CGFloat) -> Void)] = [
     ("broken3", { levelCornerStyled($0, broken3) }), ("broken4", { levelCornerStyled($0, broken4) }),
     ("wrap3", { levelCornerStyled($0, wrap3) }), ("wrap4", { levelCornerStyled($0, wrap4) }),
     ("outerleft", { levelCornerStyled($0, outerLeft) }), ("outerright", { levelCornerStyled($0, outerRight) }),
-    ("outerboth", { levelCornerStyled($0, outerBoth) }),
+    ("outerboth", { levelCornerStyled($0, outerBoth) }), ("menubold", { levelCornerStyled($0, menuBold) }),
+    ("menumid", { levelCornerStyled($0, menuMid) }),
+    ("menuglyph", { levelCornerStyled($0, menuGlyph) }), ("menuglyph2", { levelCornerStyled($0, menuGlyph2) }),
     ("withinclear", { levelCornerStyled($0, withinClear) }), ("withinclear2", { levelCornerStyled($0, withinClear2) }),
     ("withincorner", { levelCornerStyled($0, withinCorner) }), ("withincorner2", { levelCornerStyled($0, withinCorner2) }),
     ("step1", { levelCornerStyled($0, step1) }), ("step1b", { levelCornerStyled($0, step1b) }),
@@ -1071,7 +1094,76 @@ func save(_ rep: NSBitmapImageRep, _ name: String) {
     try! rep.representation(using: .png, properties: [:])!.write(to: out.appendingPathComponent(name))
 }
 
+/// The white marks of a drawing as a template image (black, with the marks' coverage as
+/// alpha), cropped to the marks and scaled to `height` pixels.
+func menuTemplate(_ draw: (CGFloat) -> Void, height: Int) -> NSBitmapImageRep {
+    let big = render(1024, draw)
+    let w = big.pixelsWide, h = big.pixelsHigh
+    var alpha = [UInt8](repeating: 0, count: w * h)
+    var minX = w, minY = h, maxX = 0, maxY = 0
+    for y in 0..<h { for x in 0..<w {
+        let c = big.colorAt(x: x, y: y)!.usingColorSpace(.deviceRGB)!
+        // the tile's blues have little red; white has all of it
+        let a = max(0, min(1, (c.redComponent * 255 - 60) / 195)) * c.alphaComponent
+        let v = UInt8(a * 255)
+        alpha[y * w + x] = v
+        if v > 6 { minX = min(minX, x); maxX = max(maxX, x); minY = min(minY, y); maxY = max(maxY, y) }
+    } }
+    let cw = maxX - minX + 1, ch = maxY - minY + 1
+    let mask = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: cw, pixelsHigh: ch, bitsPerSample: 8, samplesPerPixel: 4,
+                                hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+    for y in 0..<ch { for x in 0..<cw {
+        let a = CGFloat(alpha[(y + minY) * w + (x + minX)]) / 255
+        mask.setColor(NSColor(deviceRed: 0, green: 0, blue: 0, alpha: a), atX: x, y: y)
+    } }
+    let outW = Int((CGFloat(cw) / CGFloat(ch) * CGFloat(height)).rounded())
+    let out = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: outW, pixelsHigh: height, bitsPerSample: 8, samplesPerPixel: 4,
+                               hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+    NSGraphicsContext.saveGraphicsState()
+    let ctx = NSGraphicsContext(bitmapImageRep: out)!
+    ctx.imageInterpolation = .high
+    NSGraphicsContext.current = ctx
+    NSColor.clear.set(); NSRect(x: 0, y: 0, width: outW, height: height).fill(using: .copy)
+    mask.draw(in: NSRect(x: 0, y: 0, width: outW, height: height), from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: false, hints: [.interpolation: NSImageInterpolation.high.rawValue])
+    NSGraphicsContext.restoreGraphicsState()
+    return out
+}
+
 switch which {
+case "menu":
+    // menu bar template images: `menu <name>` writes MenuIcon.png (18 px) and MenuIcon@2x.png (36 px),
+    // and menu-preview.png showing them at actual size on light and dark menu bars, and enlarged
+    let name = args.count > 3 ? args[3] : chosen
+    let draw = options.first { $0.0 == name }!.1
+    let one = menuTemplate(draw, height: 18), two = menuTemplate(draw, height: 36)
+    save(one, "MenuIcon.png"); save(two, "MenuIcon@2x.png")
+    let pw = 420, ph = 150
+    let prev = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: pw, pixelsHigh: ph, bitsPerSample: 8, samplesPerPixel: 4,
+                                hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+    NSGraphicsContext.saveGraphicsState()
+    NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: prev)
+    NSColor(white: 0.93, alpha: 1).setFill(); NSRect(x: 0, y: ph / 2, width: pw, height: ph / 2).fill()
+    NSColor(white: 0.16, alpha: 1).setFill(); NSRect(x: 0, y: 0, width: pw, height: ph / 2).fill()
+    func tinted(_ rep: NSBitmapImageRep, _ c: NSColor) -> NSBitmapImageRep {
+        let t = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: rep.pixelsWide, pixelsHigh: rep.pixelsHigh, bitsPerSample: 8, samplesPerPixel: 4,
+                                 hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+        for y in 0..<rep.pixelsHigh { for x in 0..<rep.pixelsWide {
+            let rgb = c.usingColorSpace(.deviceRGB)!
+            // the bitmap is premultiplied: each color component carries the pixel's coverage
+            let a = rgb.alphaComponent * rep.colorAt(x: x, y: y)!.alphaComponent
+            t.setColor(NSColor(deviceRed: rgb.redComponent * a, green: rgb.greenComponent * a, blue: rgb.blueComponent * a, alpha: a), atX: x, y: y)
+        } }
+        return t
+    }
+    for (row, col) in [(ph / 2, NSColor(white: 0.1, alpha: 0.85)), (0, NSColor(white: 1, alpha: 0.9))] {
+        // actual size (the 2x drawn at 1 point per 2 pixels is shown here at 2x, as on a Retina screen)
+        tinted(two, col).draw(in: NSRect(x: 20, y: row + 19, width: two.pixelsWide, height: 36))
+        tinted(one, col).draw(in: NSRect(x: 90, y: row + 28, width: one.pixelsWide, height: 18))
+        tinted(two, col).draw(in: NSRect(x: 150, y: row + 2, width: two.pixelsWide * 2, height: 72))
+    }
+    NSGraphicsContext.restoreGraphicsState()
+    save(prev, "menu-preview.png")
+    print("Wrote MenuIcon.png, MenuIcon@2x.png and menu-preview.png for \(name) in \(out.path)")
 case "app":
     let draw = options.first { $0.0 == chosen }!.1
     save(render(1024, draw), "logo.png")
