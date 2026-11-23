@@ -20,6 +20,8 @@ protocol CaptureDelegate: AnyObject {
 /// Recording permission, so nothing in System Settings has to change.
 final class Capture: NSObject, SCContentSharingPickerObserver, SCStreamDelegate, SCStreamOutput {
     weak var delegate: CaptureDelegate?
+    /// Called on main when the window picker closes: a window chosen, cancelled, or failed.
+    var onPickerClosed: (() -> Void)?
 
     private let picker = SCContentSharingPicker.shared
     private var stream: SCStream?
@@ -72,14 +74,19 @@ final class Capture: NSObject, SCContentSharingPickerObserver, SCStreamDelegate,
 
     // MARK: Picker
 
-    func contentSharingPicker(_ picker: SCContentSharingPicker, didCancelFor stream: SCStream?) {}
+    func contentSharingPicker(_ picker: SCContentSharingPicker, didCancelFor stream: SCStream?) {
+        DispatchQueue.main.async { self.onPickerClosed?() }
+    }
 
     func contentSharingPicker(_ picker: SCContentSharingPicker, didUpdateWith filter: SCContentFilter, for stream: SCStream?) {
-        DispatchQueue.main.async { self.use(filter) }
+        DispatchQueue.main.async { self.onPickerClosed?(); self.use(filter) }
     }
 
     func contentSharingPickerStartDidFailWithError(_ error: Error) {
-        DispatchQueue.main.async { self.end(reason: "The window picker could not start: \(error.localizedDescription)") }
+        DispatchQueue.main.async {
+            self.onPickerClosed?()
+            self.end(reason: "The window picker could not start: \(error.localizedDescription)")
+        }
     }
 
     private func use(_ filter: SCContentFilter) {

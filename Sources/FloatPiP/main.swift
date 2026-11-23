@@ -5,6 +5,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
     private let settings = Settings()
     private let capture = Capture()
     private let panel = PiPPanel()
+    private let hint = PickerHint()
     private var statusItem: NSStatusItem!
     private var aspect: CGFloat = 16.0 / 9.0
     private var lastStop: String?
@@ -27,6 +28,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
         statusItem.menu = menu
 
         capture.delegate = self
+        capture.onPickerClosed = { [weak self] in self?.hint.hide() }
         panel.pipView.onDragEnded = { [weak self] center in self?.dropped(at: center) }
         panel.pipView.menuProvider = { [weak self] in self?.makeMenu() ?? NSMenu() }
         panel.pipView.onZoomSteps = { [weak self] steps in self?.zoom(by: steps) }
@@ -35,7 +37,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
         applySharing()
         NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification,
                                                object: nil, queue: .main) { [weak self] _ in self?.relayout() }
-        capture.pick()
+        pickWindow()
     }
 
     // MARK: Menu
@@ -97,10 +99,10 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
             zooms.addItem(.separator())
             zooms.addItem(i)
         }
-        let hint = NSMenuItem(title: "Scroll or pinch on the picture to zoom", action: nil, keyEquivalent: "")
-        hint.isEnabled = false
+        let zoomTip = NSMenuItem(title: "Scroll or pinch on the picture to zoom", action: nil, keyEquivalent: "")
+        zoomTip.isEnabled = false
         zooms.addItem(.separator())
-        zooms.addItem(hint)
+        zooms.addItem(zoomTip)
         menu.addItem(submenu("Zoom (Center of Window)", zooms))
 
         let shapes = NSMenu()
@@ -116,6 +118,9 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
         let hide = item("Hide from Screen Sharing", #selector(toggleHideFromSharing))
         hide.state = settings.hideFromSharing ? .on : .off
         menu.addItem(hide)
+        let note = item("Show Sharing Note on Picture", #selector(toggleShareNote))
+        note.state = settings.showShareNote ? .on : .off
+        menu.addItem(note)
 
         menu.addItem(.separator())
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
@@ -137,7 +142,10 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
         return i
     }
 
-    @objc private func pickWindow() { capture.pick() }
+    @objc private func pickWindow() {
+        hint.show()
+        capture.pick()
+    }
     @objc private func stopPiP() { capture.stop() }
 
     @objc private func toggleHideFromSharing() {
@@ -146,12 +154,20 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
         if panel.isVisible { panel.pipView.flashNote() }
     }
 
-    /// The picture is left out of screen sharing unless that is turned off; its note says which.
+    @objc private func toggleShareNote() {
+        settings.showShareNote.toggle()
+        applySharing()
+        if panel.isVisible { panel.pipView.flashNote() }
+    }
+
+    /// The picture is left out of screen sharing unless that is turned off; its note says which,
+    /// unless the note is turned off too.
     private func applySharing() {
         panel.sharingType = settings.hideFromSharing ? .none : .readOnly
+        panel.pipView.noteEnabled = settings.showShareNote
         panel.pipView.setNote(settings.hideFromSharing
-            ? ["Not visible in screen shares (change in the menu)", "Not visible in screen shares", "Not shared"]
-            : ["Visible in screen shares (change in the menu)", "Visible in screen shares", "Shared"])
+            ? ["Not visible in screen shares (change or hide this in the menu)", "Not visible in screen shares", "Not shared"]
+            : ["Visible in screen shares (change or hide this in the menu)", "Visible in screen shares", "Shared"])
     }
 
     @objc private func setPlacement(_ sender: NSMenuItem) {

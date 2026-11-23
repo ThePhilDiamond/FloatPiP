@@ -51,6 +51,10 @@ final class PiPView: NSView {
     private var noteHideTimer: Timer?
     private var hovering = false
     private var noteScale: CGFloat = 2
+    /// Off: the note never shows.
+    var noteEnabled = true {
+        didSet { if !noteEnabled { noteHideTimer?.invalidate(); showNote(false) } }
+    }
 
     /// Called on release after a drag, with the picture's center in screen coordinates.
     var onDragEnded: ((NSPoint) -> Void)?
@@ -148,6 +152,7 @@ final class PiPView: NSView {
 
     /// Shows the note for four seconds (longer while the pointer is over the picture).
     func flashNote() {
+        guard noteEnabled else { return }
         showNote(true)
         noteHideTimer?.invalidate()
         noteHideTimer = Timer.scheduledTimer(withTimeInterval: 4, repeats: false) { [weak self] _ in
@@ -210,7 +215,7 @@ final class PiPView: NSView {
 
     override func mouseEntered(with event: NSEvent) {
         hovering = true
-        showNote(true)
+        if noteEnabled { showNote(true) }
     }
 
     override func mouseExited(with event: NSEvent) {

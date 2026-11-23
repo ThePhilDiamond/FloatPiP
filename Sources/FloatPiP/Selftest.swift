@@ -97,6 +97,7 @@ enum Selftest {
         s.corner = .topLeft; s.shape = .circle; s.screenID = 7
         check(s.placement == .corners && s.freeCenter == nil && s.zoomPercent == 100, "defaults: snap to corners, no free position, 100% zoom")
         check(s.hideFromSharing, "by default the picture is hidden from screen sharing")
+        check(s.showShareNote, "by default the sharing note shows")
         s.zoomPercent = 50; check(s.zoomPercent == 100, "zoom is at least 100%")
         s.zoomPercent = 900; check(s.zoomPercent == 400, "zoom is at most 400%")
         s.zoomPercent = 170; s.placement = .free; s.freeCenter = NSPoint(x: 321, y: 654)
