@@ -49,19 +49,16 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
                 }
             }
         }
-        pickWindow()
+        // Nothing opens at launch: the picker would cover the menu bar icon, the way to control
+        // Window Raft. A window is picked from the menu (Pick a Window…).
     }
 
-    /// Opening Window Raft again while it runs (from Finder, Launchpad, or Spotlight): a way in when
-    /// macOS hides its menu bar icon, as it does behind the camera notch when the menu bar is full.
-    /// Nothing floating: the window picker. Something floating: the menu, under the pointer.
+    /// Opening Window Raft again while it runs (from Finder, Launchpad, or Spotlight) shows its menu
+    /// under the pointer: a way in when macOS hides the menu bar icon, as it does behind the camera
+    /// notch when the menu bar is full.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        if capture.isRunning {
-            NSApp.activate()
-            makeMenu().popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
-        } else {
-            pickWindow()
-        }
+        NSApp.activate()
+        makeMenu().popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
         return false
     }
 
