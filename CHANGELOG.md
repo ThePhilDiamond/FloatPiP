@@ -4,6 +4,20 @@ All notable changes to Window Raft (called FloatPiP until 0.2.0) are listed here
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-23
+
+### Added
+
+- If macOS hides Window Raft's menu bar icon, as it does behind the camera notch when the menu bar is full, open Window Raft again from Finder or Spotlight to show its menu under the pointer.
+
+### Changed
+
+- Window Raft no longer opens the window picker when it starts, where the picker covered its menu bar icon. Choose Pick a Window… from its menu instead.
+
+### Fixed
+
+- macOS's screen-sharing indicator no longer stays in the menu bar, naming Window Raft, while nothing is floating. It shows only while you pick a window or one is floating.
+
 ## [0.2.0] - 2026-11-23
 
 ### Added
@@ -34,6 +48,7 @@ All notable changes to Window Raft (called FloatPiP until 0.2.0) are listed here
 - Drag the picture to move it; it snaps to the nearest corner. FloatPiP remembers your choices.
 - The picture floats the way macOS and calling apps show floating video: two soft shadows and a faint hairline, with no border.
 
-[Unreleased]: https://github.com/ThePhilDiamond/WindowRaft/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/ThePhilDiamond/WindowRaft/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/ThePhilDiamond/WindowRaft/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/ThePhilDiamond/WindowRaft/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/ThePhilDiamond/WindowRaft/releases/tag/v0.1.0
