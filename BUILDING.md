@@ -50,10 +50,10 @@ iconutil -c icns build/icon/AppIcon.iconset -o Resources/AppIcon.icns
 sips -z 512 512 build/icon/logo.png --out docs/images/logo.png
 ```
 
-The menu bar icon is the same drawing with slightly heavier strokes (`menumid`), as a template image that macOS colors for light and dark menu bars:
+The menu bar icon is the small picture and its ripples from the same drawing, without the window (`menubob`), as a template image that macOS colors for light and dark menu bars:
 
 ```bash
-swift scripts/make-icon.swift build/icon menu menumid
+swift scripts/make-icon.swift build/icon menu menubob
 ```
 
 ```bash

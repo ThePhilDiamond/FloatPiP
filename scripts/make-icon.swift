@@ -1,5 +1,5 @@
 // Draws FloatPiP's logo options as PNGs, and the app icon set.
-// Usage: swift scripts/make-icon.swift <output folder> [sheet [name,name,...]|app|menu [name]]
+// Usage: swift scripts/make-icon.swift <output folder> [sheet [name,name,...]|app|menu [name [max width in points]]]
 // The chosen icon is "outerboth" (round 15); every option drawn on the way is kept, so any can be redrawn.
 //   sheet: every option (or those named) side by side, large and at 32 pixels (sheet.png)
 //   app:   the chosen logo (logo.png) and AppIcon.iconset, for iconutil
@@ -494,6 +494,7 @@ struct CornerStyle {
     var taperBreaks: [[(CGFloat, CGFloat)]] = []            // per ring: gaps in its near side, each piece tapering to a point at a gap
     var knockMargin: CGFloat = 0.6                          // with submerge: how far past the outer ring the frame is hidden, in frame lines
     var haloFollowsBreaks = true                            // the water gap traces the broken pieces (false: the whole ripples, smooth)
+    var noFrame = false                                     // leave out the outer window: the small picture and its ripples alone
 }
 
 /// The near side of one ring as crescent pieces: the outer edge on the ring's ellipse,
@@ -578,7 +579,7 @@ func levelCornerStyled(_ s: CGFloat, _ st: CornerStyle) {
     }
     let back2 = st.farSide ? back : NSBezierPath()
     let inner = turn.transform(NSBezierPath(roundedRect: frameRect.insetBy(dx: line, dy: line), xRadius: radius - line, yRadius: radius - line))
-    let frame = turn.transform(NSBezierPath(roundedRect: frameRect.insetBy(dx: line / 2, dy: line / 2), xRadius: radius - line / 2, yRadius: radius - line / 2))
+    let frame = st.noFrame ? NSBezierPath() : turn.transform(NSBezierPath(roundedRect: frameRect.insetBy(dx: line / 2, dy: line / 2), xRadius: radius - line / 2, yRadius: radius - line / 2))
     frame.lineWidth = line
     func picture() {
         if st.curve.a == 0 {
@@ -830,6 +831,11 @@ var menuMid = outerBoth
 menuMid.line = 0.047
 menuMid.rings = [(0.36, 0.11, 0.037), (0.56, 0.165, 0.032)]
 menuMid.taperBreaks = [[(CGFloat.pi * 1.60, CGFloat.pi * 1.67)], [(CGFloat.pi * 1.36, CGFloat.pi * 1.415), (CGFloat.pi * 1.815, CGFloat.pi * 1.87)]]
+// The menu bar icon as Phil suggested: the bobber and its ripples from the logo, without the window
+var menuBob = outerBoth
+menuBob.noFrame = true
+var menuBobMid = menuMid
+menuBobMid.noFrame = true
 var curveCut = curveDeep
 curveCut.knockRing = 0
 var standCorner = dipClearWide
@@ -1065,6 +1071,7 @@ let options: [(String, (CGFloat) -> Void)] = [
     ("outerleft", { levelCornerStyled($0, outerLeft) }), ("outerright", { levelCornerStyled($0, outerRight) }),
     ("outerboth", { levelCornerStyled($0, outerBoth) }), ("menubold", { levelCornerStyled($0, menuBold) }),
     ("menumid", { levelCornerStyled($0, menuMid) }),
+    ("menubob", { levelCornerStyled($0, menuBob) }), ("menubobmid", { levelCornerStyled($0, menuBobMid) }),
     ("menuglyph", { levelCornerStyled($0, menuGlyph) }), ("menuglyph2", { levelCornerStyled($0, menuGlyph2) }),
     ("withinclear", { levelCornerStyled($0, withinClear) }), ("withinclear2", { levelCornerStyled($0, withinClear2) }),
     ("withincorner", { levelCornerStyled($0, withinCorner) }), ("withincorner2", { levelCornerStyled($0, withinCorner2) }),
@@ -1096,7 +1103,7 @@ func save(_ rep: NSBitmapImageRep, _ name: String) {
 
 /// The white marks of a drawing as a template image (black, with the marks' coverage as
 /// alpha), cropped to the marks and scaled to `height` pixels.
-func menuTemplate(_ draw: (CGFloat) -> Void, height: Int) -> NSBitmapImageRep {
+func menuTemplate(_ draw: (CGFloat) -> Void, height: Int, maxWidth: Int = Int.max) -> NSBitmapImageRep {
     let big = render(1024, draw)
     let w = big.pixelsWide, h = big.pixelsHigh
     var alpha = [UInt8](repeating: 0, count: w * h)
@@ -1116,7 +1123,9 @@ func menuTemplate(_ draw: (CGFloat) -> Void, height: Int) -> NSBitmapImageRep {
         let a = CGFloat(alpha[(y + minY) * w + (x + minX)]) / 255
         mask.setColor(NSColor(deviceRed: 0, green: 0, blue: 0, alpha: a), atX: x, y: y)
     } }
-    let outW = Int((CGFloat(cw) / CGFloat(ch) * CGFloat(height)).rounded())
+    // fit the marks within `height` and `maxWidth`, centered in an image `height` tall
+    let scale = min(CGFloat(height) / CGFloat(ch), CGFloat(maxWidth) / CGFloat(cw))
+    let outW = Int((CGFloat(cw) * scale).rounded()), drawnH = CGFloat(ch) * scale
     let out = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: outW, pixelsHigh: height, bitsPerSample: 8, samplesPerPixel: 4,
                                hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
     NSGraphicsContext.saveGraphicsState()
@@ -1124,7 +1133,7 @@ func menuTemplate(_ draw: (CGFloat) -> Void, height: Int) -> NSBitmapImageRep {
     ctx.imageInterpolation = .high
     NSGraphicsContext.current = ctx
     NSColor.clear.set(); NSRect(x: 0, y: 0, width: outW, height: height).fill(using: .copy)
-    mask.draw(in: NSRect(x: 0, y: 0, width: outW, height: height), from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: false, hints: [.interpolation: NSImageInterpolation.high.rawValue])
+    mask.draw(in: NSRect(x: 0, y: (CGFloat(height) - drawnH) / 2, width: CGFloat(outW), height: drawnH), from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: false, hints: [.interpolation: NSImageInterpolation.high.rawValue])
     NSGraphicsContext.restoreGraphicsState()
     return out
 }
@@ -1135,7 +1144,9 @@ case "menu":
     // and menu-preview.png showing them at actual size on light and dark menu bars, and enlarged
     let name = args.count > 3 ? args[3] : chosen
     let draw = options.first { $0.0 == name }!.1
-    let one = menuTemplate(draw, height: 18), two = menuTemplate(draw, height: 36)
+    // an optional fourth argument caps the width, in points
+    let maxW = args.count > 4 ? Int(args[4])! : 1000
+    let one = menuTemplate(draw, height: 18, maxWidth: maxW), two = menuTemplate(draw, height: 36, maxWidth: maxW * 2)
     save(one, "MenuIcon.png"); save(two, "MenuIcon@2x.png")
     let pw = 420, ph = 150
     let prev = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: pw, pixelsHigh: ph, bitsPerSample: 8, samplesPerPixel: 4,
