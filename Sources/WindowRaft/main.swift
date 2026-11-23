@@ -52,6 +52,19 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
         pickWindow()
     }
 
+    /// Opening Window Raft again while it runs (from Finder, Launchpad, or Spotlight): a way in when
+    /// macOS hides its menu bar icon, as it does behind the camera notch when the menu bar is full.
+    /// Nothing floating: the window picker. Something floating: the menu, under the pointer.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if capture.isRunning {
+            NSApp.activate()
+            makeMenu().popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
+        } else {
+            pickWindow()
+        }
+        return false
+    }
+
     // MARK: Menu
 
     func menuNeedsUpdate(_ menu: NSMenu) {

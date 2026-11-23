@@ -28,6 +28,8 @@ macOS 26 or later, on a Mac with Apple silicon.
 
 Window Raft's icon, a small picture afloat on rippling water, appears in the menu bar, not the Dock.
 
+If you can't see the icon, macOS may be hiding it: on a Mac with a camera notch, a full menu bar hides the icons that don't fit. Open Window Raft again from Finder or Spotlight to get the window picker (or, while a window is floating, the menu), or right-click the floating picture for the same menu. To bring the icon back, make room by turning off other icons in System Settings ▸ Menu Bar.
+
 ## Options
 
 Click the menu bar icon, or right-click the floating picture:

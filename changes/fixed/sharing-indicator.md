@@ -1,0 +1,1 @@
+- macOS's screen-sharing indicator no longer stays in the menu bar, naming Window Raft, while nothing is floating. It shows only while you pick a window or one is floating.

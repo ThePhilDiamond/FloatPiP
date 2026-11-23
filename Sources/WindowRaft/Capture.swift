@@ -45,13 +45,15 @@ final class Capture: NSObject, SCContentSharingPickerObserver, SCStreamDelegate,
         picker.defaultConfiguration = config
         picker.maximumStreamCount = 1
         picker.add(self)
-        picker.isActive = true
+        // Not active yet: while the picker is active, macOS lists Window Raft in its screen-sharing
+        // menu and keeps that indicator in the menu bar, so it is on only while picking or floating.
     }
 
     /// Shows the system window picker; a choice starts capture, or switches
     /// the running capture to the new window.
     func pick() {
         NSApp.activate()
+        picker.isActive = true
         if let stream {
             picker.present(for: stream, using: .window)
         } else {
@@ -75,7 +77,10 @@ final class Capture: NSObject, SCContentSharingPickerObserver, SCStreamDelegate,
     // MARK: Picker
 
     func contentSharingPicker(_ picker: SCContentSharingPicker, didCancelFor stream: SCStream?) {
-        DispatchQueue.main.async { self.onPickerClosed?() }
+        DispatchQueue.main.async {
+            self.onPickerClosed?()
+            if self.stream == nil { self.picker.isActive = false }   // nothing floating: leave macOS's menu
+        }
     }
 
     func contentSharingPicker(_ picker: SCContentSharingPicker, didUpdateWith filter: SCContentFilter, for stream: SCStream?) {
@@ -200,6 +205,7 @@ final class Capture: NSObject, SCContentSharingPickerObserver, SCStreamDelegate,
         let old = stream
         stream = nil
         old?.stopCapture { _ in }
+        picker.isActive = false   // macOS's screen-sharing indicator goes away with the picture
         delegate?.captureDidEnd(reason: reason)
     }
 
