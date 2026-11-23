@@ -1,15 +1,19 @@
 // Draws Window Raft's logo options as PNGs, and the app icon set.
-// Usage: swift scripts/make-icon.swift <output folder> [sheet [name,name,...]|app|menu [name [max width in points]]]
-// The chosen icon is "outerboth" (round 15); every option drawn on the way is kept, so any can be redrawn.
+// Usage: swift scripts/make-icon.swift <output folder> [sheet [name,name,...]|app|menu [name [max width in points]]|big name]
+// The chosen icon is "oarsnug20" (round 19: round 15's "outerboth" with an oar, its head partly under the water),
+// and its menu bar icon "menuoarsnug20";
+// every option drawn on the way is kept, so any can be redrawn.
 //   sheet: every option (or those named) side by side, large and at 32 pixels (sheet.png)
 //   app:   the chosen logo (logo.png) and AppIcon.iconset, for iconutil
-//   menu:  the menu bar icon (MenuIcon.png and MenuIcon@2x.png), from the chosen drawing or the one named
+//   menu:  the menu bar icon (MenuIcon.png and MenuIcon@2x.png), from the chosen menu drawing or the one named
+//   big:   one option at 1024 pixels (big.png)
 import AppKit
 
 let args = CommandLine.arguments
 let out = URL(fileURLWithPath: args.count > 1 ? args[1] : "build/icon")
 let which = args.count > 2 ? args[2] : "sheet"
-let chosen = "outerboth"
+let chosen = "oarsnug20"
+let chosenMenu = "menuoarsnug20"
 try? FileManager.default.createDirectory(at: out, withIntermediateDirectories: true)
 
 func color(_ hex: UInt32, _ a: CGFloat = 1) -> NSColor {
@@ -495,6 +499,10 @@ struct CornerStyle {
     var knockMargin: CGFloat = 0.6                          // with submerge: how far past the outer ring the frame is hidden, in frame lines
     var haloFollowsBreaks = true                            // the water gap traces the broken pieces (false: the whole ripples, smooth)
     var noFrame = false                                     // leave out the outer window: the small picture and its ripples alone
+    var oarSnug: CGFloat = 0                                // with oarDip: the oar is drawn after the ripples' wide water gap, and kept
+                                                            // apart from them by a water line only this wide (0: the wide gap cuts the oar)
+    var oarShift: CGFloat = 0                               // with oar: the whole oar moved right by this share of the icon
+    var oarDip = false                                      // with oar: its head partly under the water, drawn with the picture
     var oar = false                                         // with a paddle: ripplewin's oar (a long, flat, rounded blade and a thinner shaft)
     var logRaft = false                                     // the small picture is a raft of three logs lying across, lashed with two ropes
     var gripMix: CGFloat = 0                                // with a paddle: 0.5 puts the grip halfway between raised and low
@@ -657,7 +665,8 @@ func levelCornerStyled(_ s: CGFloat, _ st: CornerStyle) {
     let frame = st.noFrame ? NSBezierPath() : turn.transform(NSBezierPath(roundedRect: frameRect.insetBy(dx: line / 2, dy: line / 2), xRadius: radius - line / 2, yRadius: radius - line / 2))
     frame.lineWidth = line
     /// The paddle across the picture's left side: drawn with the picture, or, as an oar, last of all, on top of the water.
-    func drawPaddle() {
+    @discardableResult func drawPaddle() -> NSBezierPath {
+        var outline = NSBezierPath()
     if st.raft.hasSuffix("paddle") || st.raft.hasSuffix("paddle2") {
         // a paddle across the picture's left side, its blade dipping into the water
         let bold = st.raft.hasSuffix("paddle2") || st.lowGrip
@@ -666,9 +675,9 @@ func levelCornerStyled(_ s: CGFloat, _ st: CornerStyle) {
         let mix: CGFloat = st.lowGrip ? 1 : st.gripMix
         let high = NSPoint(x: pc.x - w * (bold ? 0.10 : 0.18), y: pc.y + h * (bold ? 0.92 : 0.78))
         let low = NSPoint(x: pc.x - w * 0.02, y: pc.y + h * 0.50)
-        let grip = NSPoint(x: high.x + (low.x - high.x) * mix, y: high.y + (low.y - high.y) * mix)
+        let grip = NSPoint(x: high.x + (low.x - high.x) * mix + s * st.oarShift, y: high.y + (low.y - high.y) * mix)
         // the oar lies on the water, its whole blade showing; the older paddle dips its blade in
-        let tip = NSPoint(x: pc.x - w * (bold ? 0.86 : 0.80), y: waterline + s * (st.oar ? 0.004 : -0.012))
+        let tip = NSPoint(x: pc.x - w * (bold ? 0.86 : 0.80) + s * st.oarShift, y: waterline + s * (st.oar ? (st.oarDip ? -0.003 : 0.004) : -0.012))
         let dx = tip.x - grip.x, dy = tip.y - grip.y, len = sqrt(dx * dx + dy * dy)
         let reach: CGFloat = st.oar ? 0.76 : 0.72
         let shaft = NSBezierPath(); shaft.move(to: grip); shaft.line(to: NSPoint(x: grip.x + dx * reach, y: grip.y + dy * reach))
@@ -683,7 +692,7 @@ func levelCornerStyled(_ s: CGFloat, _ st: CornerStyle) {
         let bt = NSAffineTransform(); bt.translateX(by: bladeC.x, yBy: bladeC.y); bt.rotate(byRadians: atan2(dy, dx))
         let bladePath = bt.transform(blade)
         NSGraphicsContext.saveGraphicsState()
-        if !st.oar { NSBezierPath(rect: NSRect(x: 0, y: waterline - s * 0.006, width: s, height: s)).addClip() }
+        if !st.oar || st.oarDip { NSBezierPath(rect: NSRect(x: 0, y: waterline - s * 0.006, width: s, height: s)).addClip() }
         // a gap of water where the shaft crosses the picture, then the paddle in white
         shaft.lineWidth = s * 0.042
         waterFill(s, NSBezierPath(cgPath: shaft.cgPath.copy(strokingWithWidth: s * 0.044, lineCap: .round, lineJoin: .round, miterLimit: 4)))
@@ -695,6 +704,7 @@ func levelCornerStyled(_ s: CGFloat, _ st: CornerStyle) {
             oar.append(bladePath)
             waterFill(s, NSBezierPath(cgPath: oar.cgPath.copy(strokingWithWidth: s * 0.026, lineCap: .round, lineJoin: .round, miterLimit: 4)))
             white.setFill(); oar.fill()
+            outline = oar
         } else {
             shaft.lineWidth = s * (bold ? 0.026 : 0.020)
             white.setStroke(); shaft.stroke()
@@ -702,6 +712,7 @@ func levelCornerStyled(_ s: CGFloat, _ st: CornerStyle) {
         }
         NSGraphicsContext.restoreGraphicsState()
     }
+        return outline
     }
     func picture() {
         if st.raft.hasPrefix("deck") { return }   // drawn last, on top of the water, by drawDeckRaft
@@ -779,7 +790,7 @@ func levelCornerStyled(_ s: CGFloat, _ st: CornerStyle) {
             }
         }
         NSGraphicsContext.restoreGraphicsState()
-        if !st.oar { drawPaddle() }
+        if !st.oar || (st.oarDip && st.oarSnug == 0) { drawPaddle() }
     }
     if st.spill && st.cutFrame {
         back2.lineWidth = back.lineWidth
@@ -826,8 +837,22 @@ func levelCornerStyled(_ s: CGFloat, _ st: CornerStyle) {
             NSGradient(colors: [color(0x37B6E9), color(0x1769D1)])!.draw(in: NSRect(x: s * 0.1, y: s * 0.1, width: s * 0.8, height: s * 0.8), angle: -90)
             NSGraphicsContext.restoreGraphicsState()
         }
+        if st.oarDip && st.oarSnug > 0 {
+            // the oar over the ripples' wide gap, then only a thin line of water where the near ripples cross it,
+            // as water lapping at the blade rather than a round bite out of it
+            let oarPath = drawPaddle()
+            var pieces = frontAll
+            if !st.taperBreaks.isEmpty {
+                pieces = NSBezierPath()
+                for (i, r) in rings.enumerated() { pieces.append(taperedCrescents(s, cx: rcx, cy: waterline, ring: r, gaps: i < st.taperBreaks.count ? st.taperBreaks[i] : [])) }
+            }
+            NSGraphicsContext.saveGraphicsState()
+            NSBezierPath(rect: oarPath.bounds.insetBy(dx: -s * 0.01, dy: -s * 0.01)).addClip()
+            waterFill(s, NSBezierPath(cgPath: pieces.cgPath.copy(strokingWithWidth: s * st.oarSnug, lineCap: .round, lineJoin: .round, miterLimit: 4)))
+            NSGraphicsContext.restoreGraphicsState()
+        }
         fillFront()
-        if st.oar { drawPaddle() }
+        if st.oar && !st.oarDip { drawPaddle() }
         if st.raft.hasPrefix("deck") { drawDeckRaft(s, st, center: NSPoint(x: rcx, y: waterline), ring: rings[0], pic: (w, h), line: line) }
         return
     }
@@ -1035,6 +1060,22 @@ var raftPaddleMid = outerBoth; raftPaddleMid.raft = "paddle2"; raftPaddleMid.gri
 var oarMid = raftPaddleMid; oarMid.oar = true
 var oarMidLogs = oarMid; oarMidLogs.logRaft = true
 var menuOarMid = menuBobPaddleMid; menuOarMid.oar = true
+var oarMidDip = oarMid; oarMidDip.oarDip = true
+var menuOarMidDip = menuOarMid; menuOarMidDip.oarDip = true
+// moved right, so the left ends of the ripples show, curving back toward the window
+var oarDipRight3 = oarMidDip; oarDipRight3.oarShift = 0.03
+var oarDipRight15 = oarMidDip; oarDipRight15.oarShift = 0.015
+var oarDipRight2 = oarMidDip; oarDipRight2.oarShift = 0.02
+var menuOarDipRight15 = menuOarMidDip; menuOarDipRight15.oarShift = 0.015
+var menuOarDipRight2 = menuOarMidDip; menuOarDipRight2.oarShift = 0.02
+var oarDipRight5 = oarMidDip; oarDipRight5.oarShift = 0.05
+// Phil: right 3%, with a smaller cutout where the ripples meet the oar
+var oarSnug12 = oarDipRight3; oarSnug12.oarSnug = 0.012
+var oarSnug20 = oarDipRight3; oarSnug20.oarSnug = 0.020
+var menuOarDipRight3 = menuOarMidDip; menuOarDipRight3.oarShift = 0.03
+var menuOarDipRight5 = menuOarMidDip; menuOarDipRight5.oarShift = 0.05
+var menuOarSnug12 = menuOarDipRight3; menuOarSnug12.oarSnug = 0.012
+var menuOarSnug20 = menuOarDipRight3; menuOarSnug20.oarSnug = 0.020
 var menuOarMidLogs = menuOarMid; menuOarMidLogs.logRaft = true
 var menuBobLogsPaddleLow = menuBobLogsPaddle; menuBobLogsPaddleLow.lowGrip = true
 var curveCut = curveDeep
@@ -1520,7 +1561,14 @@ let options: [(String, (CGFloat) -> Void)] = [
     ("ripplewin", { drawRippleWindow($0, "ripplewin") }), ("ripplewin3", { drawRippleWindow($0, "ripplewin3") }),
     ("ripplewintilt", { drawRippleWindow($0, "ripplewintilt") }), ("ripplewinsolid", { drawRippleWindow($0, "ripplewinsolid") }),
     ("menubobpaddlemid", { levelCornerStyled($0, menuBobPaddleMid) }), ("raftpaddlemid", { levelCornerStyled($0, raftPaddleMid) }),
-    ("oarmid", { levelCornerStyled($0, oarMid) }), ("oarmidlogs", { levelCornerStyled($0, oarMidLogs) }),
+    ("oarmid", { levelCornerStyled($0, oarMid) }), ("oarmiddip", { levelCornerStyled($0, oarMidDip) }),
+    ("menuoarmiddip", { levelCornerStyled($0, menuOarMidDip) }),
+    ("oardipright15", { levelCornerStyled($0, oarDipRight15) }), ("oardipright2", { levelCornerStyled($0, oarDipRight2) }),
+    ("menuoardipright15", { levelCornerStyled($0, menuOarDipRight15) }), ("menuoardipright2", { levelCornerStyled($0, menuOarDipRight2) }),
+    ("oardipright3", { levelCornerStyled($0, oarDipRight3) }),
+    ("oarsnug12", { levelCornerStyled($0, oarSnug12) }), ("oarsnug20", { levelCornerStyled($0, oarSnug20) }),
+    ("menuoarsnug12", { levelCornerStyled($0, menuOarSnug12) }), ("menuoarsnug20", { levelCornerStyled($0, menuOarSnug20) }), ("oardipright5", { levelCornerStyled($0, oarDipRight5) }),
+    ("menuoardipright3", { levelCornerStyled($0, menuOarDipRight3) }), ("menuoardipright5", { levelCornerStyled($0, menuOarDipRight5) }), ("oarmidlogs", { levelCornerStyled($0, oarMidLogs) }),
     ("menuoarmid", { levelCornerStyled($0, menuOarMid) }), ("menuoarmidlogs", { levelCornerStyled($0, menuOarMidLogs) }), ("menuboblogspaddlelow", { levelCornerStyled($0, menuBobLogsPaddleLow) }), ("menubold", { levelCornerStyled($0, menuBold) }),
     ("menumid", { levelCornerStyled($0, menuMid) }),
     ("menubob", { levelCornerStyled($0, menuBob) }), ("menubobmid", { levelCornerStyled($0, menuBobMid) }),
@@ -1599,7 +1647,7 @@ case "big":
 case "menu":
     // menu bar template images: `menu <name>` writes MenuIcon.png (18 px) and MenuIcon@2x.png (36 px),
     // and menu-preview.png showing them at actual size on light and dark menu bars, and enlarged
-    let name = args.count > 3 ? args[3] : chosen
+    let name = args.count > 3 ? args[3] : chosenMenu
     let draw = options.first { $0.0 == name }!.1
     // an optional fourth argument caps the width, in points
     let maxW = args.count > 4 ? Int(args[4])! : 1000
