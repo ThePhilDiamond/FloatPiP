@@ -1286,6 +1286,142 @@ func drawRippleWindow(_ s: CGFloat, _ v: String) {
     white.setFill(); paddleT.fill()
 }
 
+
+// MARK: Round 18 (Phil: the outer shape IS a ripple, not a window; the raft must read as a raft AND as a
+// window; the paddle's blade rests on the raft; the menu bar icon is the raft and paddle alone)
+
+/// One ripple ring, between an ellipse (p = 2) and a rounded rectangle (larger p), as tapered pieces: thickest on
+/// the near side (toward `nearAngle`), thinnest on the far side, each piece narrowing to a point at its gaps.
+func ripplePieces(center c: NSPoint, a: CGFloat, b: CGFloat, p: CGFloat, near tn: CGFloat, far tf: CGFloat,
+                  nearAngle: CGFloat, gaps: [(CGFloat, CGFloat)]) -> NSBezierPath {
+    func pt(_ th: CGFloat) -> NSPoint {
+        let cs = cos(th), sn = sin(th)
+        return NSPoint(x: c.x + a * (cs < 0 ? -1 : 1) * pow(abs(cs), 2 / p), y: c.y + b * (sn < 0 ? -1 : 1) * pow(abs(sn), 2 / p))
+    }
+    func thick(_ th: CGFloat) -> CGFloat { tf + (tn - tf) * (1 + cos(th - nearAngle)) / 2 }
+    var pieces: [(CGFloat, CGFloat)] = []
+    let g = gaps.map { ($0.0 * .pi / 180, $0.1 * .pi / 180) }.sorted { $0.0 < $1.0 }
+    if g.isEmpty { pieces = [(0, 2 * .pi)] } else {
+        for i in 0..<g.count { pieces.append((g[i].1, i + 1 < g.count ? g[i + 1].0 : g[0].0 + 2 * .pi)) }
+    }
+    let path = NSBezierPath()
+    for (p0, p1) in pieces {
+        let steps = max(32, Int((p1 - p0) * 60))
+        var outer: [NSPoint] = [], inner: [NSPoint] = []
+        for i in 0...steps {
+            let th = p0 + (p1 - p0) * CGFloat(i) / CGFloat(steps)
+            var f: CGFloat = 1
+            if !g.isEmpty { f = min(sqrt(min(1, (th - p0) / 0.20)), sqrt(min(1, (p1 - th) / 0.20))) }
+            let q = pt(th), q2 = pt(th + 0.002)
+            var nx = q2.y - q.y, ny = -(q2.x - q.x)
+            let l = max(1e-9, sqrt(nx * nx + ny * ny)); nx /= l; ny /= l
+            let t = thick(th) * f / 2
+            outer.append(NSPoint(x: q.x + nx * t, y: q.y + ny * t)); inner.append(NSPoint(x: q.x - nx * t, y: q.y - ny * t))
+        }
+        path.move(to: outer[0]); for q in outer.dropFirst() { path.line(to: q) }
+        for q in inner.reversed() { path.line(to: q) }; path.close()
+    }
+    return path
+}
+
+/// The raft, seen from above, in `r`. Styles: "tube" (an inflatable raft: a thick rounded rim, the window's frame,
+/// with two seats across it), "logs" (logs side by side, round-ended, lashed with two ropes), "logrim" (a frame of
+/// four logs, their ends crossing at the corners, with two logs across inside). Returns the white shape.
+func raftShape(_ r: NSRect, style: String) -> NSBezierPath {
+    let shape = NSBezierPath(); shape.windingRule = .evenOdd
+    switch style {
+    case "logs":
+        let n = 5, gap = r.width * 0.025, lw = (r.width - gap * CGFloat(n - 1)) / CGFloat(n)
+        let deck = NSBezierPath()
+        for i in 0..<n {
+            deck.append(NSBezierPath(roundedRect: NSRect(x: r.minX + (lw + gap) * CGFloat(i), y: r.minY, width: lw, height: r.height), xRadius: lw / 2, yRadius: lw / 2))
+        }
+        for fy in [CGFloat(0.27), 0.73] {
+            let rh = r.height * 0.11
+            deck.append(NSBezierPath(rect: NSRect(x: r.minX + lw * 0.3, y: r.minY + r.height * fy - rh / 2, width: r.width - lw * 0.6, height: rh)))
+        }
+        return deck
+    case "logrim":
+        let t = r.height * 0.20, over = t * 0.55
+        let rim = NSBezierPath()
+        // long logs top and bottom, short logs at the sides, each running past the corners
+        rim.append(NSBezierPath(roundedRect: NSRect(x: r.minX - over, y: r.maxY - t, width: r.width + 2 * over, height: t), xRadius: t / 2, yRadius: t / 2))
+        rim.append(NSBezierPath(roundedRect: NSRect(x: r.minX - over, y: r.minY, width: r.width + 2 * over, height: t), xRadius: t / 2, yRadius: t / 2))
+        for x in [r.minX, r.maxX - t] {
+            rim.append(NSBezierPath(roundedRect: NSRect(x: x, y: r.minY - over, width: t, height: r.height + 2 * over), xRadius: t / 2, yRadius: t / 2))
+        }
+        for fx in [CGFloat(0.37), 0.63] {
+            rim.append(NSBezierPath(roundedRect: NSRect(x: r.minX + r.width * fx - t * 0.4, y: r.minY + t * 0.5, width: t * 0.8, height: r.height - t), xRadius: t * 0.4, yRadius: t * 0.4))
+        }
+        return rim
+    default:   // tube
+        let t = r.height * 0.21, rad = r.height * 0.34
+        let inner = r.insetBy(dx: t, dy: t)
+        shape.append(NSBezierPath(roundedRect: r, xRadius: rad, yRadius: rad))
+        shape.append(NSBezierPath(roundedRect: inner, xRadius: rad - t * 0.8, yRadius: rad - t * 0.8))
+        // two seats across, inside the rim, meeting it without overlapping (so the even-odd fill keeps them)
+        for fx in [CGFloat(0.37), 0.63] {
+            shape.append(NSBezierPath(rect: NSRect(x: r.minX + r.width * fx - t * 0.42, y: inner.minY, width: t * 0.84, height: inner.height)))
+        }
+        return shape
+    }
+}
+
+/// Variant names: "rr-<style>-<rings>[-tilt][-menu]", for example "rr-tube-2" or "rr-logs-3-tilt"; "-menu" draws
+/// the raft and paddle alone.
+func drawRippleRaft(_ s: CGFloat, _ v: String) {
+    drawTile(s)
+    let parts = v.split(separator: "-").map(String.init)
+    let style = parts[1], nRings = Int(parts[2]) ?? 2
+    let tilt: CGFloat = parts.contains("tilt") ? -8 : 0, menu = parts.contains("menu")
+    // the raft sits toward the bottom right; each ripple is centered further up and left than the one inside it,
+    // so the rings are close on the near side and spread further on the far side
+    let rw = s * 0.28, rh = s * 0.175
+    // the outer ripple is the same size however many rings there are: about 0.6 by 0.47 of the icon
+    let target = (a: s * 0.315, b: s * 0.248)
+    let grow = (a: (target.a - rw / 2) / CGFloat(nRings), b: (target.b - rh / 2) / CGFloat(nRings))
+    let step = (x: grow.a * 0.44, y: grow.b * 0.44)
+    let margin = (a: grow.a - step.x, b: grow.b - step.y)
+    let total = (x: step.x * CGFloat(nRings), y: step.y * CGFloat(nRings))
+    let rc = NSPoint(x: s * 0.5 + total.x, y: s * 0.5 - total.y)
+    let raft = NSRect(x: rc.x - rw / 2, y: rc.y - rh / 2, width: rw, height: rh)
+    if !menu {
+        var a = rw / 2, b = rh / 2, c = rc
+        let ripples = NSBezierPath()
+        for k in 1...nRings {
+            c = NSPoint(x: c.x - step.x, y: c.y + step.y)
+            a += step.x + margin.a; b += step.y + margin.b
+            let last = k == nRings
+            let p: CGFloat = last ? 5.5 : 3.2 + CGFloat(k - 1) * 0.8
+            let gaps: [(CGFloat, CGFloat)] = last ? [(112, 120), (200, 208)] : (k == 1 ? [(140, 150), (240, 250)] : [(165, 174), (95, 103)])
+            ripples.append(ripplePieces(center: c, a: a, b: b, p: p, near: s * (last ? 0.036 : 0.030), far: s * (last ? 0.026 : 0.017),
+                                        nearAngle: -38 * .pi / 180, gaps: gaps))
+        }
+        white.setFill(); ripples.fill()
+    }
+    let tr = NSAffineTransform(); tr.translateX(by: rc.x, yBy: rc.y); tr.rotate(byDegrees: tilt); tr.translateX(by: -rc.x, yBy: -rc.y)
+    let body = tr.transform(raftShape(raft, style: style))
+    // the paddle lies on the raft: its blade on the deck at the left, the shaft across to the far corner
+    // lying along the raft, a little aslant, all of it on board: the blade in the left end, the grip on the right rim
+    let bladeC = NSPoint(x: raft.minX + rw * 0.25, y: raft.midY - rh * 0.10)
+    let grip = NSPoint(x: raft.maxX - rw * 0.09, y: raft.midY + rh * 0.22)
+    let dx = grip.x - bladeC.x, dy = grip.y - bladeC.y, len = sqrt(dx * dx + dy * dy)
+    let shaft = NSBezierPath(); shaft.move(to: NSPoint(x: bladeC.x + dx * 0.25, y: bladeC.y + dy * 0.25)); shaft.line(to: grip)
+    let bt = NSAffineTransform(); bt.translateX(by: bladeC.x, yBy: bladeC.y); bt.rotate(byRadians: atan2(dy, dx))
+    let blade = bt.transform(NSBezierPath(roundedRect: NSRect(x: -len * 0.20, y: -s * 0.027, width: len * 0.40, height: s * 0.054), xRadius: s * 0.026, yRadius: s * 0.026))
+    let paddle = NSBezierPath(cgPath: shaft.cgPath.copy(strokingWithWidth: s * 0.018, lineCap: .round, lineJoin: .round, miterLimit: 4))
+    paddle.append(blade)
+    // a crossbar at the grip, so it reads as a paddle's handle
+    let gt = NSAffineTransform(); gt.translateX(by: grip.x, yBy: grip.y); gt.rotate(byRadians: atan2(dy, dx))
+    paddle.append(gt.transform(NSBezierPath(roundedRect: NSRect(x: -s * 0.010, y: -s * 0.022, width: s * 0.020, height: s * 0.044), xRadius: s * 0.010, yRadius: s * 0.010)))
+    let paddleT = tr.transform(paddle)
+    // gaps of water: around the raft, and around the paddle where it lies on the raft
+    waterFill(s, NSBezierPath(cgPath: body.cgPath.copy(strokingWithWidth: s * 0.030, lineCap: .round, lineJoin: .round, miterLimit: 4)))
+    white.setFill(); body.fill()
+    waterFill(s, NSBezierPath(cgPath: paddleT.cgPath.copy(strokingWithWidth: s * 0.016, lineCap: .round, lineJoin: .round, miterLimit: 4)))
+    white.setFill(); paddleT.fill()
+}
+
 let options: [(String, (CGFloat) -> Void)] = [
     ("ripples", drawRipplesLogo), ("tube", drawTubeLogo), ("corner", drawCornerLogo), ("afloat", drawAfloatLogo), ("lounger", drawLoungerLogo),
     ("bobber", drawBobberLogo), ("pipbuoy", drawPipBuoyLogo), ("squarering", drawSquareRingLogo),
@@ -1329,6 +1465,18 @@ let options: [(String, (CGFloat) -> Void)] = [
     ("raftacrossshort", { levelCornerStyled($0, raftAcrossShort) }), ("raftacrossrings", { levelCornerStyled($0, raftAcrossRings) }), ("raftdeckplain", { levelCornerStyled($0, raftDeckPlain) }),
     ("menubobpaddle", { levelCornerStyled($0, menuBobPaddle) }), ("menuboblogspaddle", { levelCornerStyled($0, menuBobLogsPaddle) }),
     ("menubobpaddlelow", { levelCornerStyled($0, menuBobPaddleLow) }), ("menubobacross", { levelCornerStyled($0, menuBobAcross) }),
+    ("rr-tube-2", { drawRippleRaft($0, "rr-tube-2") }),
+    ("rr-tube-3", { drawRippleRaft($0, "rr-tube-3") }),
+    ("rr-tube-2-tilt", { drawRippleRaft($0, "rr-tube-2-tilt") }),
+    ("rr-tube-2-menu", { drawRippleRaft($0, "rr-tube-2-menu") }),
+    ("rr-logs-2", { drawRippleRaft($0, "rr-logs-2") }),
+    ("rr-logs-3", { drawRippleRaft($0, "rr-logs-3") }),
+    ("rr-logs-2-tilt", { drawRippleRaft($0, "rr-logs-2-tilt") }),
+    ("rr-logs-2-menu", { drawRippleRaft($0, "rr-logs-2-menu") }),
+    ("rr-logrim-2", { drawRippleRaft($0, "rr-logrim-2") }),
+    ("rr-logrim-3", { drawRippleRaft($0, "rr-logrim-3") }),
+    ("rr-logrim-2-tilt", { drawRippleRaft($0, "rr-logrim-2-tilt") }),
+    ("rr-logrim-2-menu", { drawRippleRaft($0, "rr-logrim-2-menu") }),
     ("ripplewin", { drawRippleWindow($0, "ripplewin") }), ("ripplewin3", { drawRippleWindow($0, "ripplewin3") }),
     ("ripplewintilt", { drawRippleWindow($0, "ripplewintilt") }), ("ripplewinsolid", { drawRippleWindow($0, "ripplewinsolid") }),
     ("menubobpaddlemid", { levelCornerStyled($0, menuBobPaddleMid) }), ("raftpaddlemid", { levelCornerStyled($0, raftPaddleMid) }), ("menuboblogspaddlelow", { levelCornerStyled($0, menuBobLogsPaddleLow) }), ("menubold", { levelCornerStyled($0, menuBold) }),
