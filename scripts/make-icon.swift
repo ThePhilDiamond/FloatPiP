@@ -495,6 +495,7 @@ struct CornerStyle {
     var knockMargin: CGFloat = 0.6                          // with submerge: how far past the outer ring the frame is hidden, in frame lines
     var haloFollowsBreaks = true                            // the water gap traces the broken pieces (false: the whole ripples, smooth)
     var noFrame = false                                     // leave out the outer window: the small picture and its ripples alone
+    var lowGrip = false                                     // with a paddle: its grip no higher than the picture's top
     var raft = ""                                           // round 16: "logs", "lashed", "logends", "paddle" (empty: the plain picture)
 }
 
@@ -654,8 +655,10 @@ func levelCornerStyled(_ s: CGFloat, _ st: CornerStyle) {
         NSGraphicsContext.restoreGraphicsState()
         if st.raft.hasSuffix("paddle") || st.raft.hasSuffix("paddle2") {
             // a paddle across the picture's left side, its blade dipping into the water
-            let bold = st.raft.hasSuffix("paddle2")
-            let grip = NSPoint(x: pc.x - w * (bold ? 0.10 : 0.18), y: pc.y + h * (bold ? 0.92 : 0.78))
+            let bold = st.raft.hasSuffix("paddle2") || st.lowGrip
+            // lowGrip (menu bar): the grip no higher than the picture, so the icon keeps its size at 18 points
+            let grip = st.lowGrip ? NSPoint(x: pc.x - w * 0.02, y: pc.y + h * 0.50)
+                : NSPoint(x: pc.x - w * (bold ? 0.10 : 0.18), y: pc.y + h * (bold ? 0.92 : 0.78))
             let tip = NSPoint(x: pc.x - w * (bold ? 0.86 : 0.80), y: waterline - s * 0.012)
             let dx = tip.x - grip.x, dy = tip.y - grip.y, len = sqrt(dx * dx + dy * dy)
             let shaft = NSBezierPath(); shaft.move(to: grip); shaft.line(to: NSPoint(x: grip.x + dx * 0.72, y: grip.y + dy * 0.72))
@@ -909,6 +912,11 @@ var menuBob = outerBoth
 menuBob.noFrame = true
 var menuBobMid = menuMid
 menuBobMid.noFrame = true
+// their menu bar icons: the bobber and ripples alone, as menubob, with the same raft marks
+var menuBobPaddle = menuBob; menuBobPaddle.raft = "paddle2"
+var menuBobLogsPaddle = menuBob; menuBobLogsPaddle.raft = "logspaddle2"
+var menuBobPaddleLow = menuBobPaddle; menuBobPaddleLow.lowGrip = true
+var menuBobLogsPaddleLow = menuBobLogsPaddle; menuBobLogsPaddleLow.lowGrip = true
 var curveCut = curveDeep
 curveCut.knockRing = 0
 var standCorner = dipClearWide
@@ -1146,7 +1154,9 @@ let options: [(String, (CGFloat) -> Void)] = [
     ("raftlogs", { levelCornerStyled($0, raftLogs) }), ("raftlashed", { levelCornerStyled($0, raftLashed) }),
     ("raftlogends", { levelCornerStyled($0, raftLogEnds) }), ("raftpaddle", { levelCornerStyled($0, raftPaddle) }),
     ("raftpaddle2", { levelCornerStyled($0, raftPaddle2) }), ("raftlogends4", { levelCornerStyled($0, raftLogEnds4) }),
-    ("raftlogspaddle", { levelCornerStyled($0, raftLogsPaddle) }), ("menubold", { levelCornerStyled($0, menuBold) }),
+    ("raftlogspaddle", { levelCornerStyled($0, raftLogsPaddle) }),
+    ("menubobpaddle", { levelCornerStyled($0, menuBobPaddle) }), ("menuboblogspaddle", { levelCornerStyled($0, menuBobLogsPaddle) }),
+    ("menubobpaddlelow", { levelCornerStyled($0, menuBobPaddleLow) }), ("menuboblogspaddlelow", { levelCornerStyled($0, menuBobLogsPaddleLow) }), ("menubold", { levelCornerStyled($0, menuBold) }),
     ("menumid", { levelCornerStyled($0, menuMid) }),
     ("menubob", { levelCornerStyled($0, menuBob) }), ("menubobmid", { levelCornerStyled($0, menuBobMid) }),
     ("menuglyph", { levelCornerStyled($0, menuGlyph) }), ("menuglyph2", { levelCornerStyled($0, menuGlyph2) }),
