@@ -21,6 +21,8 @@ final class Updater {
     enum Phase: Equatable { case idle, checking, upToDate, available(String), installing, failed(String) }
     private(set) var phase: Phase = .idle
     private(set) var releasePage: URL?
+    /// The latest release's notes, as its Markdown on GitHub (CHANGELOG.md's section for that version).
+    private(set) var releaseNotes: String?
     private var zip: URL?
     private var sig: URL?
     private var timer: Timer?
@@ -58,6 +60,7 @@ final class Updater {
             }
             let version = tag.hasPrefix("v") ? String(tag.dropFirst()) : tag
             releasePage = (json["html_url"] as? String).flatMap(URL.init(string:))
+            releaseNotes = json["body"] as? String
             func asset(_ suffix: String) -> URL? {
                 assets.first { ($0["name"] as? String)?.hasSuffix(suffix) == true }
                     .flatMap { $0["browser_download_url"] as? String }.flatMap(URL.init(string:))
@@ -129,6 +132,23 @@ final class Updater {
         case .upToDate, .failed: phase = .idle
         default: break
         }
+    }
+
+    /// What's new, from a release's notes: each "### Added", "### Changed" or "### Fixed" heading with the
+    /// "- " items under it, without Markdown's ** and ` marks. Anything else, such as the downloads
+    /// paragraph, is left out, and so is a heading with no items.
+    nonisolated static func whatsNew(_ markdown: String) -> [(heading: String, items: [String])] {
+        var sections: [(heading: String, items: [String])] = []
+        for raw in markdown.split(whereSeparator: \.isNewline) {
+            let line = raw.trimmingCharacters(in: .whitespaces)
+            if line.hasPrefix("### ") {
+                sections.append((String(line.dropFirst(4)), []))
+            } else if line.hasPrefix("- "), !sections.isEmpty {
+                let item = line.dropFirst(2).replacingOccurrences(of: "**", with: "").replacingOccurrences(of: "`", with: "")
+                sections[sections.count - 1].items.append(item)
+            }
+        }
+        return sections.filter { !$0.items.isEmpty }
     }
 
     static let needsNewerMacOSKey = "updateNeedsNewerMacOS"
