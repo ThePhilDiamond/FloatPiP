@@ -1,1 +1,0 @@
-- Zoom into the center of the floating window, from 100% (the whole window) to 400%, from the new Zoom menu, or by scrolling or pinching on the picture.
