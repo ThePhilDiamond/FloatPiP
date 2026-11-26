@@ -1,0 +1,1 @@
+- The menu's Stop is now **Stop Floating**, and the Position submenu is now one **Snap to Corners** item: ticked, the picture settles into the nearest corner; unticked, it stays where you drop it.

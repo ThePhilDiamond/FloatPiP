@@ -34,8 +34,8 @@ If you can't see the icon, macOS may be hiding it: on a Mac with a camera notch,
 Click the menu bar icon, or right-click the floating picture:
 
 - **Pick a Window / Pick Another Window**: opens macOS's window picker; a new choice replaces the current window.
-- **Stop**: closes the floating picture.
-- **Position**: Snap to Corners (the default) or Stay Where Dropped. Drag the picture to move it: with Snap to Corners it settles into the nearest corner of the screen you drop it on, as macOS's own picture in picture does; with Stay Where Dropped it stays where you let go, kept wholly on screen.
+- **Stop Floating**: closes the floating picture; greyed out until you pick a window.
+- **Snap to Corners** (on by default): drag the picture to move it. While this is ticked, it settles into the nearest corner of the screen you drop it on, as macOS's own picture in picture does; untick it and the picture stays where you let go, kept wholly on screen.
 - **Size (Height of Screen)**: the picture's height as a share of the screen's height, from 10% to 90% (30% by default).
 - **Shape**: Rounded (the default) and Rectangle (sharp corners) show the whole window, never stretched; Circle shows the middle of it.
 - **Zoom (Center of Window)**: 100% shows the whole window; 125% to 400% show its center larger, cutting away the edges, such as a call app's buttons. Scroll or pinch on the picture to zoom in 10% steps or smoothly.

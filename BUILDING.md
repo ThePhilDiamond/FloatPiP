@@ -26,7 +26,7 @@ swift build -c release
 .build/release/WindowRaft --selftest
 ```
 
-The selftest checks the floating picture's layout (corners, sizes, shapes, margins, shadows, and capture size) and the remembered options, without opening a window or capturing anything. CI runs it on every pull request.
+The selftest checks the floating picture's layout (corners, sizes, shapes, margins, shadows, and capture size) the remembered options, updates, and the menu's Stop Floating item, without opening a window or capturing anything. CI runs it on every pull request.
 
 ## The icon
 

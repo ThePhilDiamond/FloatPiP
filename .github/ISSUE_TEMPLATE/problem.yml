@@ -17,5 +17,5 @@ body:
     id: what
     attributes:
       label: What you did, and what happened
-      description: If the picture closed by itself, its menu shows the reason in gray under Stop.
+      description: If the picture closed by itself, its menu shows the reason in gray under Stop Floating.
     validations: { required: true }

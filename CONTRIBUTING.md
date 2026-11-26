@@ -4,7 +4,7 @@ Thanks for helping. There are three easy ways in.
 
 ## Report a problem
 
-[Open an issue](../../issues/new/choose) with the Window Raft version (in its menu, above Quit), your macOS version, what you did, and what happened. If the floating picture closed by itself, its menu shows the reason in gray under Stop: include it. Leave out anything private, such as what was in the window: issues are public.
+[Open an issue](../../issues/new/choose) with the Window Raft version (in its menu, above Quit), your macOS version, what you did, and what happened. If the floating picture closed by itself, its menu shows the reason in gray under Stop Floating: include it. Leave out anything private, such as what was in the window: issues are public.
 
 ## Tell us if the picture showed up in a screen share
 

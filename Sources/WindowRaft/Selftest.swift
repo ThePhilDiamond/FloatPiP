@@ -1,8 +1,8 @@
 import AppKit
 import CryptoKit
 
-/// `Window Raft --selftest`: checks the panel's layout and the remembered
-/// options without opening a window or capturing anything, so CI can run it.
+/// `Window Raft --selftest`: checks the panel's layout, the remembered options, updates, and the
+/// menu's Stop Floating item, without opening a window or capturing anything, so CI can run it.
 /// The expected numbers are the styling rules in README.md ("How it looks").
 enum Selftest {
     private static var passed = 0
@@ -108,6 +108,21 @@ enum Selftest {
         check(news.first?.items == ["One new thing.", "Another."] && news.last?.items == ["A fix."], "what's new lists the items without Markdown marks, got \(news.map(\.items))")
         check(Updater.whatsNew("**Downloads:** the app.").isEmpty, "the downloads line alone gives nothing to show")
 
+        // The menu: Stop Floating is greyed out unless a picture is floating, and stays so once the menu
+        // is updated, as macOS does before showing it (with an app, and a target that answers the action).
+        // The app must exist: without one, macOS enables nothing by itself, and this check would pass
+        // even if the menu left enabling to macOS.
+        _ = NSApplication.shared
+        let answers = MenuAnswers()
+        for floating in [false, true] {
+            let menu = AppController.newMenu()
+            let stop = AppController.stopItem(floating: floating, target: answers)
+            menu.addItem(stop)
+            menu.update()
+            check(stop.title == "Stop Floating" && stop.isEnabled == floating,
+                  "Stop Floating is \(floating ? "enabled" : "greyed out") \(floating ? "while" : "unless") a picture is floating, got enabled \(stop.isEnabled)")
+        }
+
         // Remembered options, in a scratch defaults domain.
         let suite = "io.github.thephildiamond.FloatPiP.selftest"
         let scratch = UserDefaults(suiteName: suite)!
@@ -136,4 +151,9 @@ enum Selftest {
         print("Window Raft selftest: \(failures.count) of \(passed + failures.count) checks failed.")
         return 1
     }
+}
+
+/// Answers Stop Floating's action, as Window Raft's controller does, so macOS would enable the item.
+private final class MenuAnswers: NSObject {
+    @objc func stopPiP() {}
 }
