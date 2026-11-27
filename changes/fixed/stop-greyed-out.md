@@ -1,0 +1,1 @@
+- Stop Floating is now greyed out until you pick a window, and Checking for Updates… while a check or install runs. Before, both could still be chosen.

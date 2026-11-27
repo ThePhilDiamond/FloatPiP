@@ -16,15 +16,9 @@ enum Corner: String, CaseIterable {
 }
 
 /// Where the picture sits: snapped to the nearest corner, or wherever it was dropped.
+/// The menu's Snap to Corners: on is `corners`, off is `free` (the picture stays where dropped).
 enum Placement: String, CaseIterable {
     case corners, free
-
-    var title: String {
-        switch self {
-        case .corners: return "Snap to Corners"
-        case .free: return "Stay Where Dropped"
-        }
-    }
 }
 
 enum Shape: String, CaseIterable {

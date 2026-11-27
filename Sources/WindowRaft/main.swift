@@ -23,7 +23,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
         } else {
             statusItem.button?.image = NSImage(systemSymbolName: "pip", accessibilityDescription: "Window Raft")
         }
-        let menu = NSMenu()
+        let menu = AppController.newMenu()
         menu.delegate = self
         statusItem.menu = menu
 
@@ -70,8 +70,17 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
     }
 
     private func makeMenu() -> NSMenu {
-        let menu = NSMenu()
+        let menu = AppController.newMenu()
         fill(menu)
+        return menu
+    }
+
+    /// The menu bar menu and the picture's right-click menu. Their items are enabled or greyed out
+    /// as `fill` sets them: left to macOS, any item whose target answers its action is enabled, so
+    /// Stop Floating and Checking for Updates… could be chosen while greyed out.
+    static func newMenu() -> NSMenu {
+        let menu = NSMenu()
+        menu.autoenablesItems = false
         return menu
     }
 
@@ -82,9 +91,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
             menu.addItem(.separator())
         }
         menu.addItem(item(capture.isRunning ? "Pick Another Window…" : "Pick a Window…", #selector(pickWindow)))
-        let stop = item("Stop", #selector(stopPiP))
-        stop.isEnabled = capture.isRunning
-        menu.addItem(stop)
+        menu.addItem(AppController.stopItem(floating: capture.isRunning, target: self))
         if !capture.isRunning, let lastStop {
             let note = NSMenuItem(title: lastStop, action: nil, keyEquivalent: "")
             note.isEnabled = false
@@ -92,14 +99,9 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
         }
         menu.addItem(.separator())
 
-        let positions = NSMenu()
-        for p in Placement.allCases {
-            let i = item(p.title, #selector(setPlacement(_:)))
-            i.representedObject = p.rawValue
-            i.state = settings.placement == p ? .on : .off
-            positions.addItem(i)
-        }
-        menu.addItem(submenu("Position", positions))
+        let snap = item("Snap to Corners", #selector(toggleSnapToCorners))
+        snap.state = settings.placement == .corners ? .on : .off
+        menu.addItem(snap)
 
         let sizes = NSMenu()
         for p in Settings.sizeChoices {
@@ -167,6 +169,14 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
         menu.addItem(NSMenuItem(title: "Quit Window Raft", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
     }
 
+    /// Stop Floating closes the picture; it is greyed out unless a picture is floating.
+    static func stopItem(floating: Bool, target: AnyObject?) -> NSMenuItem {
+        let i = NSMenuItem(title: "Stop Floating", action: #selector(stopPiP), keyEquivalent: "")
+        i.target = target
+        i.isEnabled = floating
+        return i
+    }
+
     private func item(_ title: String, _ action: Selector) -> NSMenuItem {
         let i = NSMenuItem(title: title, action: action, keyEquivalent: "")
         i.target = self
@@ -183,7 +193,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
         hint.show()
         capture.pick()
     }
-    @objc private func stopPiP() { capture.stop() }
+    @objc func stopPiP() { capture.stop() }
 
     @objc private func toggleHideFromSharing() {
         settings.hideFromSharing.toggle()
@@ -313,8 +323,9 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate, Capt
         alert.runModal()
     }
 
-    @objc private func setPlacement(_ sender: NSMenuItem) {
-        guard let raw = sender.representedObject as? String, let p = Placement(rawValue: raw), p != settings.placement else { return }
+    /// Snap to Corners on: the picture settles into the nearest corner; off: it stays where dropped.
+    @objc private func toggleSnapToCorners() {
+        let p: Placement = settings.placement == .corners ? .free : .corners
         // keep the picture where it is when freeing it; snap it to the nearest corner when anchoring it
         let center = pictureCenter
         settings.placement = p
