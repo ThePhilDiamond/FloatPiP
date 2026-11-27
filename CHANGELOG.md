@@ -4,6 +4,16 @@ All notable changes to Window Raft (called FloatPiP until 0.2.0) are listed here
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-26
+
+### Changed
+
+- The menu's Stop is now **Stop Floating**, and the Position submenu is now one **Snap to Corners** item: ticked, the picture settles into the nearest corner; unticked, it stays where you drop it.
+
+### Fixed
+
+- Stop Floating is now greyed out until you pick a window, and Checking for Updates… while a check or install runs. Before, both could still be chosen.
+
 ## [0.4.1] - 2026-11-23
 
 ### Fixed
@@ -60,7 +70,8 @@ All notable changes to Window Raft (called FloatPiP until 0.2.0) are listed here
 - Drag the picture to move it; it snaps to the nearest corner. FloatPiP remembers your choices.
 - The picture floats the way macOS and calling apps show floating video: two soft shadows and a faint hairline, with no border.
 
-[Unreleased]: https://github.com/ThePhilDiamond/WindowRaft/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/ThePhilDiamond/WindowRaft/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/ThePhilDiamond/WindowRaft/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/ThePhilDiamond/WindowRaft/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/ThePhilDiamond/WindowRaft/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/ThePhilDiamond/WindowRaft/compare/v0.2.0...v0.3.0
